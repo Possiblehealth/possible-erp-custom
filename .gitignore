@@ -1,0 +1,27 @@
+# Created by .ignore support plugin (hsz.mobi)
+.vagrant
+.vagrant/*
+.classpath
+.project
+.settings/
+target/
+felix-cache/
+.externalToolBuilders/
+maven-eclipse.xml
+*.iml
+*.ipr
+*.iws
+.
+*.class
+*.eml
+*.userlibraries
+out/
+Error_log/
+bbcwt.log*
+test-output/
+.DS_Store
+*.log*
+*.box
+*.pyc
+packages
+.idea

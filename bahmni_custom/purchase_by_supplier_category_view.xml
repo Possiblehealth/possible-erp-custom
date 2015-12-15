@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="supplier_category_report_tree" model="ir.ui.view">
+            <field name="name">supplier_category.report.tree</field>
+            <field name="model">supplier_category.report</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Supplier Category Report">
+                    <field name="name_template"/>
+                    <field name="date_order"/>
+                    <field name="product_qty"/>
+                    <field name="amount_total"/>
+                    <field name="x_name"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="supplier_category_report_graph" model="ir.ui.view">
+            <field name="name">supplier_category.report.graph</field>
+            <field name="model">supplier_category.report</field>
+            <field name="arch" type="xml">
+                <graph string="Supplier Category Report" type="pie">
+                    <field name="x_name" group="True" />
+                    <field name="product_qty" operator="+"/>
+                </graph>
+            </field>
+        </record>
+
+        <record id="supplier_category_report_tree_filter" model="ir.ui.view">
+            <field name="name">supplier_category.report.filter</field>
+            <field name="model">supplier_category.report</field>
+            <field name="arch" type="xml">
+                <search string="Search Category name">
+
+                    <field name="x_name"/>
+                </search>
+            </field>
+        </record>
+
+
+        <record model="ir.actions.act_window" id="action_show_purchases_by_supp_cat">
+            <field name="name">Supplier Category Report</field>
+            <field name="res_model">supplier_category.report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">tree</field>
+            <field name="view_mode">tree,graph</field>
+            <field name="view_id" ref="supplier_category_report_tree"/>
+            <field name="search_view_id" ref="supplier_category_report_tree_filter"/>
+            <field name="context">{}</field>
+        </record>
+        <menuitem id="menu_test_base_main" parent="base.menu_sales" name="Supplier Category Report" sequence="6" action="action_show_purchases_by_supp_cat" />
+
+
+    </data>
+</openerp>

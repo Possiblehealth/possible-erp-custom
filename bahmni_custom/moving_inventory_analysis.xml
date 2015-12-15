@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="stock_move_inventory_report_tree" model="ir.ui.view">
+            <field name="name">stock_move_inventory.report.tree</field>
+            <field name="model">stock_move_inventory.report</field>
+            <field name="type">tree</field>
+            <field name="arch" type="xml">
+                <tree string="Stock Move Inventory Report">
+                    <field name="name_template"/>
+                    <field name="date_order"/>
+                    <field name="quantity"/>
+                </tree>
+            </field>
+        </record>
+
+        <record id="stock_move_inventory_report_graph" model="ir.ui.view">
+            <field name="name">stock_move_inventory.report.graph</field>
+            <field name="model">stock_move_inventory.report</field>
+            <field name="arch" type="xml">
+                <chart-d3 string="View Name" version="7.0" type="line">
+                    <x-axis>
+                        <field name="name_template" tick-format="d" label="name" />
+                    </x-axis>
+
+                    <y-axis>
+                        <field name="quantity" label="Date" tick-format=".2f"/>
+                    </y-axis>
+                    <!--<y2-axis>-->
+                        <!--<field name="date_order" label="Label field 1 on the chart" tick-format=".2f"/>-->
+                    <!--</y2-axis>-->
+                    <options>
+                        <rotate-labels value="0"/>
+                        <tool-tips value="False"/>
+                        <no-data value="No data available"/>
+                        <menu pie="True"/>
+                        <donut value="True"/>
+                    </options>
+                </chart-d3>
+            </field>
+        </record>
+
+        <record id="stock_move_inventory_report_tree_filter" model="ir.ui.view">
+            <field name="name">stock_move_inventory.report.filter</field>
+            <field name="model">stock_move_inventory.report</field>
+            <field name="arch" type="xml">
+                <search string="Search Category name">
+                    <field name="name_template"/>
+                </search>
+            </field>
+        </record>
+        <record model="ir.actions.act_window" id="action_show_moving_inventory">
+            <field name="name">Stock Move Inventory Report</field>
+            <field name="res_model">stock_move_inventory.report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">tree</field>
+            <field name="view_mode">tree,chart-d3</field>
+            <field name="view_id" ref="stock_move_inventory_report_tree"/>
+            <field name="search_view_id" ref="stock_move_inventory_report_tree_filter"/>
+            <field name="context">{}</field>
+        </record>
+        <menuitem id="menu_stock_base_main" parent="base.menu_sales" name="Stock Move Inventory Report" sequence="8" action="action_show_moving_inventory" />
+    </data>
+</openerp>
