@@ -150,6 +150,7 @@ svg {
   -moz-user-select: none;
   -ms-user-select: none;
   user-select: none;
+  padding: 20px;
   /* Trying to get SVG to act like a greedy block in all browsers */
   display: block;
   width:100%;
@@ -767,4 +768,14 @@ Interactive Layer
 }
 .nvd3 line.nv-guideline {
   stroke: #ccc;
+}
+
+
+
+
+
+
+/**  **/
+.graph_header{
+  left: 0 !important;
 }

@@ -50,21 +50,13 @@ class IrUiView(osv.Model):
             _logger.error(
                 "the %r node must only have 1 %r node" % (VIEW_TYPE[0], axis))
         else:
-            fields = _axis[0].getchildren()
-            if not fields:
+            field = _axis[0].attrib.get('field')
+            if not self.valid_type_chart_d3_field_exist(cr, uid, model, field,
+                                                        context=context):
                 res = False
-                _logger.error("the %r.%r node must have %r nodes" % (
-                    VIEW_TYPE[0], axis, 'field'))
-
-            for field in fields:
-                fname = field.attrib.get('name')
-                if not self.valid_type_chart_d3_field_exist(cr, uid, model,
-                                                            fname,
-                                                            context=context):
-                    res = False
-                    _logger.error(
-                        "the field %r in the %r.%r node doesn't exist" %
-                        (fname, axis, 'field'))
+                _logger.error(
+                    "the field %r in the %r node doesn't exist" %
+                    (_axis[0].text, axis))
 
         return res
 

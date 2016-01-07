@@ -184,8 +184,16 @@ class IrUiViewChartD3(osv.AbstractModel):
 
         return values
 
+    def autocomplete_data(self, cr, uid, model, searchText,
+             context=None):
+        res = []
+        res.append({'name':'one','id':'1'})
+        res.append({'name':'onee','id':'2'})
+        res.append({'name':'onew','id':'3'})
+        return res;
+
     def get_data(self, cr, uid, model, xaxis, yaxis, domain, groupby, options,
-                 context=None):
+                 product, start_date, end_date, context=None):
         obj = self.pool.get(model)
         group_by = []
         for gb in groupby:

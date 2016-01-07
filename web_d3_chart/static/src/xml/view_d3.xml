@@ -48,6 +48,14 @@
                     </ul>
                 </nav>
             </div>
+            <div class="graph">
+                <input type="text" id="autocomplete_field" />
+                <input style="margin:10px" type="text" id="start_date" />
+                <input style="margin:10px" type="text" id="end_date" />
+                <button style="margin:10px" id="showgraph">Show Graph</button>
+                <button style="margin:10px" id="download_data">Download Data</button>
+            </div>
+
         </div>
         <svg class="graph_main_content"/>
         <canvas t-att-id="'canvas_' + widget.element_id" class="invisible"/>

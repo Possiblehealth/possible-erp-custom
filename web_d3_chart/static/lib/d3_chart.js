@@ -6031,7 +6031,6 @@
 
         var stateGetter = function(data) {
             return function(){
-                console.log(data);
                 return {
                     active: data.map(function(d) { return !d.disabled })
                 };
