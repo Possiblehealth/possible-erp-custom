@@ -18,7 +18,7 @@
             <field name="name">stock_out.report.graph</field>
             <field name="model">stock_out.report</field>
             <field name="arch" type="xml">
-                <chart-d3 string="View Name" version="7.0" type="line">
+                <chart-d3 string="View Name" version="7.0" type="line" >
                     <x-axis>
                         <field name="name" tick-format="d" label="name" />
                     </x-axis>
@@ -30,11 +30,11 @@
                         <!--<field name="date_order" label="Label field 1 on the chart" tick-format=".2f"/>-->
                     <!--</y2-axis>-->
                     <options>
-                        <rotate-labels value="0"/>
-                        <tool-tips value="False"/>
                         <no-data value="No data available"/>
-                        <menu pie="True"/>
-                        <donut value="True"/>
+                        <enable-download value="True"/>
+                        <download-label value="Download KPI Data - Hospital"/>
+                        <enable-autocomplete value="False"/>
+                        <autocomplete-label value="Product"/>
                     </options>
                 </chart-d3>
             </field>
@@ -54,11 +54,11 @@
             <field name="res_model">stock_out.report</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">tree</field>
-            <field name="view_mode">tree,chart-d3</field>
+            <field name="view_mode">chart-d3</field>
             <field name="view_id" ref="stock_out_report_tree"/>
             <field name="search_view_id" ref="stock_out_report_tree_filter"/>
             <field name="context">{}</field>
         </record>
-        <menuitem id="menu_stock_out_main" parent="base.menu_sales" name="Stock Out Report" sequence="9" action="action_show_stock_out" />
+        <menuitem id="menu_stock_out_main" parent="custom_report" name="Stock Out Report" sequence="9" action="action_show_stock_out" />
     </data>
 </openerp>

@@ -34,7 +34,6 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
 
     def autocomplete_data(self, cr, uid, model, searchText,
         context=None):
-        _logger.error("unprocessed_order count is %s", searchText)
         productsIds = self.pool.get('product.product').search(cr, uid, [('name_template', 'ilike', searchText)],limit=10, context=context)
         res = [];
         if(productsIds):
@@ -51,7 +50,6 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
             raise osv.except_osv(('Error'), ('Please choose a start date to show the graph'))
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
-        _logger.error("ssss executing query")
         productsIds = self.pool.get('stock.location').search(cr, uid, [('name', '=', 'BPH Storeroom')],limit=10, context=context)
 
         cr.execute("SELECT name,sum(CASE WHEN sm.location_dest_id = "+str(productsIds[0])+""" THEN 1*quantity
@@ -81,14 +79,13 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
             (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
             GROUP BY sm.name,sm.date_order ORDER BY sm.date_order asc""")
         rows = cr.fetchall()
-        _logger.error("Rows = %s",rows)
-        dataset = [];
-        maxset = [];
-        minset = [];
+        dataset = []
+        maxset = []
+        minset = []
+        datasetXaxis=[]
         for row in rows:
-            _logger.error("ssss %s",row)
-            _logger.error("Sandeep is %s = %s = %s", row[0],row[1],row[2])
             dataset.append({'x':row[2],'y':row[1]+startingQty})
+            datasetXaxis.append({'x':row[2],'y':0})
             startingQty = startingQty + row[1]
             if max:
                 maxset.append({'x':row[2],'y':max})
@@ -110,6 +107,13 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
             'key': "Min Level",
             'color': "#22202c",
             'strokeWidth': 3,
+            })
+
+        res.append({
+            'values': datasetXaxis,
+            'key': "",
+            'color': "#ff202c",
+            'strokeWidth': 5,
             })
         return res,options;
 

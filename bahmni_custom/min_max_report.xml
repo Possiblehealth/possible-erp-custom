@@ -30,11 +30,11 @@
                         <!--<field name="date_order" label="Label field 1 on the chart" tick-format=".2f"/>-->
                     <!--</y2-axis>-->
                     <options>
-                        <rotate-labels value="0"/>
-                        <tool-tips value="False"/>
                         <no-data value="No data available"/>
-                        <menu pie="True"/>
-                        <donut value="True"/>
+                        <enable-download value="True"/>
+                        <download-label value="Download KPI Data - Storeroom"/>
+                        <enable-autocomplete value="False"/>
+                        <autocomplete-label value="Product"/>
                     </options>
                 </chart-d3>
             </field>
@@ -50,15 +50,15 @@
             </field>
         </record>
         <record model="ir.actions.act_window" id="action_show_min_max">
-            <field name="name">Stock Out Report</field>
+            <field name="name">Min-Max Percentage Report</field>
             <field name="res_model">min_max.report</field>
             <field name="type">ir.actions.act_window</field>
             <field name="view_type">tree</field>
-            <field name="view_mode">tree,chart-d3</field>
+            <field name="view_mode">chart-d3</field>
             <field name="view_id" ref="min_max_report_tree"/>
             <field name="search_view_id" ref="min_max_report_tree_filter"/>
             <field name="context">{}</field>
         </record>
-        <menuitem id="menu_min_max_main" parent="base.menu_sales" name="Percentage Of Products - Min Max Level" sequence="10" action="action_show_min_max" />
+        <menuitem id="menu_min_max_main" parent="custom_report" name="Min-Max (% of Products)" sequence="10" action="action_show_min_max" />
     </data>
 </openerp>

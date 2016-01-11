@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <menuitem id="custom_report" parent="base.menu_reporting" name="Custom Reports Report" sequence="1"/>
+        <!--For Accounts Supplier Reference-->
+        <record id="account_reference_form_extension_new" model="ir.ui.view">
+            <field name="name">account.reference.form.inherited</field>
+            <field name="model">account.invoice</field>
+            <field name="inherit_id" ref="account.invoice_supplier_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="supplier_reference"/>
+                </xpath>
+            </field>
+        </record>
+        <record id="account_reference_tree_extension_new" model="ir.ui.view">
+            <field name="name">account.reference.tree.inherited</field>
+            <field name="model">account.invoice</field>
+            <field name="inherit_id" ref="account.invoice_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="supplier_reference"/>
+                </xpath>
+            </field>
+        </record>
+
+
+        <!--Min-Max in Product list-->
+        <record id="add_actual_stock_product_min_max_tree" model="ir.ui.view">
+            <field name="name">product.product.tree</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_product_tree_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="/tree/field[@name='qty_available']" position="before">
+                    <field name="product_min_max"/>
+                </xpath>
+            </field>
+        </record>
+        <record id="add_actual_stock_product_check_form" model="ir.ui.view">
+            <field name="name">product.product.from.inherit</field>
+            <field name="model">product.product</field>
+            <field name="inherit_id" ref="product.product_normal_form_view"/>
+            <field name="arch" type="xml">
+                <xpath expr="//label[@for='purchase_ok']" position="after">
+                    <field name="antibiotic"/>
+                    <label for="antibiotic"/>
+                </xpath>
+            </field>
+        </record>
+
+
+        <!--Supplier Reference For Purchase menus-->
+        <record id="purchase_order_form_extension_new" model="ir.ui.view">
+            <field name="name">purchase.order.form.da</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="/form/sheet//group//field[@name='partner_id']" position="after">
+                    <field name="supplier_reference"/>
+                </xpath>
+            </field>
+        </record>
+        <record id="purchase_order_tree_extension_new" model="ir.ui.view">
+            <field name="name">purchase.order.tree.da</field>
+            <field name="model">purchase.order</field>
+            <field name="inherit_id" ref="purchase.purchase_order_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='partner_id']" position="after">
+                    <field name="supplier_reference"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!--New Field Supplier Reference in Partners-->
+        <record id="view_supplier_partner_tree_type" model="ir.ui.view">
+            <field name="name">res.partner.tree.inherited</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_form"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='website']" position="before">
+                    <field name="supplier_reference"/>
+                </xpath>
+            </field>
+        </record>
+        <record id="view_supplier_reference_tree_type" model="ir.ui.view">
+            <field name="name">res.partner.reference.tree.inherited</field>
+            <field name="model">res.partner</field>
+            <field name="inherit_id" ref="base.view_partner_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="//field[@name='email']" position="before">
+                    <field name="supplier_reference"/>
+                </xpath>
+            </field>
+        </record>
+
+        <!--Add supplier category and prod internal reference to stock move-->
+        <record id="view_move_tree_ext_new" model="ir.ui.view">
+            <field name="name">stock.move.tree</field>
+            <field name="model">stock.move</field>
+            <field eval="9" name="priority"/>
+            <field name="inherit_id" ref="stock.view_move_tree"/>
+            <field name="arch" type="xml">
+                <xpath expr="/tree/field[@name='prodlot_id']" position="before">
+                    <field name="suppliercat_name"/>
+                </xpath>
+                <xpath expr="/tree/field[@name='product_id']" position="after">
+                    <field name="prod_internal_reference"/>
+                </xpath>
+            </field>
+        </record>
+
+    </data>
+</openerp>

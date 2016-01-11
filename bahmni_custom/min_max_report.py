@@ -60,7 +60,6 @@ ORDER BY pp.id , date_order)
 
     def autocomplete_data(self, cr, uid, model, searchText,
         context=None):
-        _logger.error("unprocessed_order count is %s", searchText)
         productsIds = self.pool.get('product.product').search(cr, uid, [('name_template', 'ilike', searchText)],limit=10, context=context)
         res = [];
         if(productsIds):
@@ -75,7 +74,6 @@ ORDER BY pp.id , date_order)
             raise osv.except_osv(('Error'), ('Please choose a start date to show the graph'))
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
-        _logger.error("ssss executing query")
         header = []
         header.append("Product Name")
         header.append("Product Category")
@@ -101,7 +99,6 @@ ORDER BY pp.id , date_order)
             raise osv.except_osv(('Error'), ('Please choose a start date to show the graph'))
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
-        _logger.error("ssss executing query")
         productsIds = self.pool.get('stock.location').search(cr, uid, [('name', '=', 'BPH Storeroom')],limit=10, context=context)
 
         a = datetime.strptime(start_date, self._date_format)
@@ -139,8 +136,6 @@ ORDER BY pp.id , date_order)
         last_date=start_date+" 00:00:00.000000"
         sum_stock_out=0
         for row in rows:
-            _logger.error("ssss %s",row)
-            _logger.error("Sandeep is %s = %s = %s", row[0],row[1],row[2])
             line = []
             line.append(row[1])
             line.append(row[11])
@@ -173,9 +168,6 @@ ORDER BY pp.id , date_order)
                 last_prod_id = prodID
                 stockout_duration=0.0
                 last_date=start_date+" 00:00:00.000000"
-                _logger.error("RT1 %s",runningTotal)
-
-            _logger.error("RT2 %s , %s",runningTotal,row[2])
             if not row[2]:
                 runningTotal = runningTotal + 0
             else:
@@ -189,7 +181,6 @@ ORDER BY pp.id , date_order)
                 line.append("A Max")
             else:
                 line.append("Hit")
-            _logger.error("stock_dur %s",stockout_duration)
             if sum_stock_out==1:
                 lday = datetime.strptime(last_date, self._date_time_format)
                 cday = datetime.strptime(row[3], self._date_time_format)
@@ -235,7 +226,6 @@ ORDER BY pp.id , date_order)
             raise osv.except_osv(('Error'), ('Please choose a start date to show the graph'))
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
-        _logger.error("ssss executing query")
         productsIds = self.pool.get('stock.location').search(cr, uid, [('name', '=', 'BPH Storeroom')],limit=10, context=context)
 
         a = datetime.strptime(start_date, self._date_format)
@@ -275,8 +265,6 @@ ORDER BY pp.id , date_order)
         rows = cr.fetchall()
 # fill hash of hash here
         for row in rows:
-            _logger.error("ssss %s",row)
-            _logger.error("Sandeep is %s = %s = %s", row[0],row[1],row[2])
             arg=(row[3],row[0],row[2])
             self.addNameToDictionary(timeProdQtyHash,arg)
         self.normalizeDict(timeProdQtyHash,date_list,daybeforestr)
@@ -287,11 +275,11 @@ ORDER BY pp.id , date_order)
         # fill hash of hash here
         for row in rows:
             order_points.update({row[0]: {'min':row[2],'max':row[3]}})
-        _logger.error("Length of Order Point = %d", len(order_points))
         res = [];
         dataset={}
         datasetMin={}
         datasetMax={}
+        datasetXaxis={}
         for dateStr, prdQty in timeProdQtyHash.iteritems():
             noOfAboveMax = 0;
             noOfBelowMin = 0;
@@ -299,22 +287,23 @@ ORDER BY pp.id , date_order)
             for id, qty in prdQty.iteritems():
                 max = order_points[id]['max']
                 min = order_points[id]['min']
-                _logger.error("Min = %d : Max = %d ",min,max)
                 if qty<min :
                     noOfBelowMin += 1
                 elif qty>max :
                     noOfAboveMax += 1
                 else:
                     noOfWithRange += 1
-            _logger.error("noOfBelowMin = %d : noOfAboveMax = %d  : noOfWithRange = %d ",noOfBelowMin,noOfAboveMax,noOfWithRange)
             xdate = datetime.strptime(dateStr, self._date_format)
             ts = time.mktime(xdate.timetuple())*1000
-            dataset.update({ts: {'x':ts,'y':(noOfWithRange/len(order_points))*100} })
-            datasetMax.update({ts: {'x':ts,'y':(noOfAboveMax/len(order_points))*100} })
-            datasetMin.update({ts: {'x':ts,'y':(noOfBelowMin/len(order_points))*100} })
+            dataset.update({ts: {'x':ts,'y':round((noOfWithRange/len(order_points))*100, 2)} })
+            datasetMax.update({ts: {'x':ts,'y':round((noOfAboveMax/len(order_points))*100, 2)} })
+            datasetMin.update({ts: {'x':ts,'y':round((noOfBelowMin/len(order_points))*100, 2)} })
+            datasetXaxis.update({ts: {'x':ts,'y':0} })
+
         dataset = collections.OrderedDict(sorted(dataset.items()))
         datasetMax = collections.OrderedDict(sorted(datasetMax.items()))
         datasetMin = collections.OrderedDict(sorted(datasetMin.items()))
+        datasetXaxis = collections.OrderedDict(sorted(datasetXaxis.items()))
         res.append({
             'values': dataset.values(),
             'key': "Percent In Range",
@@ -331,6 +320,13 @@ ORDER BY pp.id , date_order)
             'key': "Percent Below Min",
             'color': "#22202c",
             'strokeWidth': 3,
+            })
+
+        res.append({
+            'values': datasetXaxis.values(),
+            'key': "",
+            'color': "#ff202c",
+            'strokeWidth': 5,
             })
         return res,options;
 

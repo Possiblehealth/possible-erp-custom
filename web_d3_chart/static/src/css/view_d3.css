@@ -145,3 +145,50 @@ nav.oe_chart_d3_field_axis ul ul li {
 .graph_mode_selection img.active {
     background: none repeat scroll 0 0 #AAAAAA;
 }
+
+
+
+/**  **/
+.graph_header{
+    left: 0 !important;
+}
+
+.graph-options-container{
+    font-size: 15px;
+    width: 520px;
+    margin-left: 40px;
+    margin-top: 20px;
+}
+.autocomplete-container #autocomplete_field{
+    width: 393px;
+    margin-bottom: 10px;
+}
+
+.date-container{
+    margin-bottom: 10px;
+}
+.date-container .start-date{
+    float: left;
+    padding-left: 40px;
+}
+.date-container input#start_date{
+    height: 18px;
+}
+
+.date-container .end-date{
+    float: right;
+}
+.date-container input#end_date{
+    height: 18px;
+}
+
+.action-container {
+    float: right;
+    margin-top: 10px;
+    margin-bottom: 20px;
+}
+
+.action-container #download_data{
+    background: #7C7BAD;
+    color: #fff;
+}
