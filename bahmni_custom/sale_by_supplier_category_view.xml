@@ -51,6 +51,6 @@
             <field name="search_view_id" ref="sale_supplier_category_report_tree_filter"/>
             <field name="context">{}</field>
         </record>
-        <menuitem id="menu_sale_base_main" parent="custom_report" name="Sales By Supplier" sequence="7" action="action_show_sales_by_supp_cat" />
+        <menuitem id="menu_sale_base_main" parent="custom_report" name="Sales By Supplier Category" sequence="7" action="action_show_sales_by_supp_cat" />
     </data>
 </openerp>

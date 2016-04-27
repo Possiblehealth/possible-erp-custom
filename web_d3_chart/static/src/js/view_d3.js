@@ -76,11 +76,6 @@ openerp.web_d3_chart = function(instance) {
             $( "#showgraph" ).click(function() {
                 self.reload();
             });
-            download_data
-
-
-
-
             if (self.bool(self.d3_options["enable-download"])){
                 $("#download_data").click(function() {
                     model = self.dataset.model;
@@ -95,11 +90,11 @@ openerp.web_d3_chart = function(instance) {
                         complete: $.unblockUI
                     });
                 });
-                var option = self.d3_options["download-label"]
+                var option = self.d3_options["download-label"];
                 if (typeof option === 'undefined' || option === null) {
 
                 }else{
-                    $( "download_data").html(option.value);
+                    $( "#download_data").html(option.value);
                 }
             }else{
                 $( "#download_data").hide();
@@ -131,11 +126,12 @@ openerp.web_d3_chart = function(instance) {
                 generate: function() {
                     var width = 600,
                         height = 300;
-
+                    var zoom = 1;
+                    var fitScreen = false;
                     var chart = nv.models.lineChart()
                         .width(width)
                         .height(height)
-                        .margin({top: 20, right: 20, bottom: 20, left: 20});
+                        .margin({top: 30});
                     chart.useInteractiveGuideline(true);
                     chart.dispatch.on('renderEnd', function(){
                         console.log('render complete');
@@ -155,6 +151,62 @@ openerp.web_d3_chart = function(instance) {
                         .attr('height', height)
                         .datum(self.d3_data)
                         .call(chart);
+
+                    setChartViewBox();
+                    resizeChart();
+
+                    nv.utils.windowResize(resizeChart);
+
+                    d3.select('#zoomIn').on('click', zoomIn);
+                    d3.select('#zoomOut').on('click', zoomOut);
+
+
+                    function setChartViewBox() {
+                        var w = width * zoom,
+                            h = height * zoom;
+
+                        chart
+                            .width(w)
+                            .height(h);
+
+                        d3.select(svg)
+                            .attr('viewBox', '0 0 ' + w + ' ' + h)
+                            .transition().duration(500)
+                            .call(chart);
+                    }
+
+                    function zoomOut() {
+                        zoom += .25;
+                        setChartViewBox();
+                    }
+
+                    function zoomIn() {
+                        if (zoom <= .5) return;
+                        zoom -= .25;
+                        setChartViewBox();
+                    }
+
+                    // This resize simply sets the SVG's dimensions, without a need to recall the chart code
+                    // Resizing because of the viewbox and perserveAspectRatio settings
+                    // This scales the interior of the chart unlike the above
+                    function resizeChart() {
+                        var container = d3.select('#'+self.element_id);
+                        var svg = container.select('svg');
+
+                        if (fitScreen) {
+                            // resize based on container's width AND HEIGHT
+                            var windowSize = nv.utils.windowSize();
+                            svg.attr("width", windowSize.width);
+                            svg.attr("height", windowSize.height);
+                        } else {
+                            // resize based on container's width
+                            var aspect = chart.width() / chart.height();
+                            var targetWidth = parseInt(container.style('width'));
+                            svg.attr("width", targetWidth);
+                            svg.attr("height", Math.round(targetWidth / aspect));
+                        }
+                    }
+
                     return chart;
                 },
                 callback: function(graph) {

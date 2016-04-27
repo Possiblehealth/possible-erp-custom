@@ -4,7 +4,6 @@
     'sequence': 101,
     'category': 'Charts',
     'description': """
-        Use Koloria icon: http://www.graphicrating.com/2012/06/14/koloria-free-icons-set.
         Used d3 chart module from http://anybox.fr as a starting point. This module draws only line charts
     """,
     'author': 'Sandeep',

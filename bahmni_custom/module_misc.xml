@@ -42,8 +42,24 @@
             <field name="inherit_id" ref="product.product_normal_form_view"/>
             <field name="arch" type="xml">
                 <xpath expr="//label[@for='purchase_ok']" position="after">
+                    <field name="other_item"/>
+                    <label for="other_item"/>
+                </xpath>
+                <xpath expr="//label[@for='purchase_ok']" position="after">
+                    <field name="medical_item"/>
+                    <label for="medical_item"/>
+                </xpath>
+                <xpath expr="//label[@for='purchase_ok']" position="after">
+                    <field name="lab_item"/>
+                    <label for="lab_item"/>
+                </xpath>
+                <xpath expr="//label[@for='purchase_ok']" position="after">
                     <field name="antibiotic"/>
                     <label for="antibiotic"/>
+                </xpath>
+                <xpath expr="//label[@for='purchase_ok']" position="after">
+                    <field name="medicine_item"/>
+                    <label for="medicine_item"/>
                 </xpath>
             </field>
         </record>

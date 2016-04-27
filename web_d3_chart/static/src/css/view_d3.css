@@ -192,3 +192,8 @@ nav.oe_chart_d3_field_axis ul ul li {
     background: #7C7BAD;
     color: #fff;
 }
+
+.graph-container{
+    border: 1px dotted red;
+    padding: 10px 20px;
+}

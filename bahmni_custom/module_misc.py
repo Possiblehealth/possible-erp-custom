@@ -71,9 +71,17 @@ class product_product(osv.osv):
     _columns={
         'product_min_max': fields.function(_get_product_min_max_qty, type='char', string='Product Min - Max Quantity',),
         'antibiotic':fields.boolean('Antibiotic'),
+        'lab_item':fields.boolean('Lab Item'),
+        'medical_item':fields.boolean('Medical Item'),
+        'other_item':fields.boolean('Other Item'),
+        'medicine_item':fields.boolean('Medicine')
         }
     _default={
-        'antibiotic':False
+        'antibiotic':False,
+        'lab_item':False,
+        'medical_item':False,
+        'other_item':False,
+        'medicine_item':False
     }
 product_product()
 
@@ -87,8 +95,12 @@ class stock_move(osv.osv):
         for stock_move in self.browse(cr, uid, ids):
             supplier_obj=self.pool.get("stock.production.lot")
             suppliercat=supplier_obj.browse(cr,uid,stock_move.prodlot_id.id)
-            category=self.pool.get("x_product_supplier_category").browse(cr,uid,suppliercat.x_supplier_category)
-            res[stock_move.id] = suppliercat.x_supplier_category.x_name
+            x_prod_supcat_cnt = self.pool.get("x_product_supplier_category").search(cr,uid,[('id' , '=', suppliercat.id)])
+            if len(x_prod_supcat_cnt) > 0:
+                x_prod_supcat = self.pool.get("x_product_supplier_category").browse(cr,uid,suppliercat.id)
+                res[stock_move.id] = x_prod_supcat.x_name
+            else:
+                res[stock_move.id] = ""
         return res
 
     def _get_prod_internal_reference(self, cr, uid, ids, name, args, context=None):
@@ -104,3 +116,51 @@ class stock_move(osv.osv):
         }
 stock_move()
 
+
+class stock_move_split_lines_exten(osv.osv_memory):
+    _name = "stock.move.split.lines"
+    _description = "Stock move Split lines"
+    _inherit = "stock.move.split.lines"
+
+    def _get_product_mrp(self, cr, uid, context=None):
+        context = context or {}
+        tax_amount = 0
+        stock_move_id = context.get('stock_move', None)
+        stock_move = stock_move_id and self.pool.get('stock.move').browse(cr, uid, stock_move_id, context=context)
+        return (stock_move and stock_move.purchase_line_id and stock_move.purchase_line_id.mrp) or 0.0
+
+    def onchange_cost_price(self, cr, uid, ids, cost_price, context=None):
+        cost_price = cost_price or 0.0
+        product_uom = self._get_product_uom(cr, uid, context=context)
+        mrp = self._get_product_mrp(cr, uid, context=context)
+        return {'value': {'sale_price': self._calculate_sale_price(cr,uid,cost_price, product_uom,mrp)}}
+
+    def _calculate_sale_price(self, cr,uid,cost_price, product_uom, mrp):
+        cost_price = cost_price or 0.0
+        return cost_price
+
+    def _calculate_default_sale_price(self, cr, uid, context=None):
+        cost_price = self._get_default_cost_price(cr, uid, context=context) or 0.0
+        product_uom = self._get_product_uom(cr, uid, context=context)
+        mrp = self._get_product_mrp(cr, uid, context=context)
+        return self._calculate_sale_price(cr,uid,cost_price, product_uom,mrp)
+
+    def _get_default_cost_price(self, cr, uid, context=None):
+        context = context or {}
+        tax_amount = 0
+        stock_move_id = context.get('stock_move', None)
+        stock_move = stock_move_id and self.pool.get('stock.move').browse(cr, uid, stock_move_id, context=context)
+        if (stock_move and stock_move.purchase_line_id):
+            for tax in stock_move.purchase_line_id.taxes_id:
+                tax_amount = tax_amount + tax.amount
+
+        return (stock_move and (stock_move.price_unit + (stock_move.price_unit * tax_amount))) or 0.0
+
+
+    _defaults = {
+        'mrp': _get_product_mrp,
+        'cost_price': _get_default_cost_price,
+        'sale_price': _calculate_default_sale_price
+    }
+
+stock_move_split_lines_exten()

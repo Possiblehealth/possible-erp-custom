@@ -23,7 +23,13 @@
             </div>
 
         </div>
-        <svg class="graph_main_content"/>
-        <canvas t-att-id="'canvas_' + widget.element_id" class="invisible"/>
+        <div class="graph-container">
+            <div class="action-container">
+                <button id="zoomIn">zoomIn</button>
+                <button id="zoomOut">zoomOut</button>
+            </div>
+            <svg class="graph_main_content"/>
+            <canvas t-att-id="'canvas_' + widget.element_id" class="invisible"/>
+        </div>
     </div>
 </template>

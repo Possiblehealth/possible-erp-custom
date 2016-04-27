@@ -55,15 +55,21 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
        ) THEN '-'
        ELSE '*'
        END as way,
+        srcloc.name as fromloc,
+        dstloc.name as toloc,
        pp.default_code as itemreference,
   swo.product_min_qty,swo.product_max_qty,swo.x_bare_minimum,
   pt.x_formulary,
   pt.x_govt,
   pt.x_low_cost_eq,
+  pp.antibiotic,pp.other_item,pp.medical_item,pp.lab_item,
+  pp.medicine_item,
        xpsc.x_name as supplier_category,
   pt.list_price,
        pc.name as product_category,
-       rp.name as supplier
+       rp.name as supplier,
+       pol.price_unit as purchase_price,at.amount as ptax,
+    (pol.price_unit+(pol.price_unit*at.amount)) as amtwithtax
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id
@@ -89,6 +95,10 @@ from
   LEFT JOIN x_product_supplier_category xpsc on xpsc.id=spl.x_supplier_category
   LEFT JOIN product_category pc on pt.categ_id= pc.id
   LEFT JOIN purchase_order_line pol on pol.id=sm.purchase_line_id
+  LEFT JOIN purchase_order_taxe pot on pot.ord_id = pol.id
+  LEFT JOIN account_tax at on at.id = pot.tax_id
+  LEFT JOIN stock_location dstloc on dstloc.id = sm.location_dest_id
+  LEFT JOIN stock_location srcloc on srcloc.id = sm.location_id
   LEFT JOIN res_partner rp on rp.id=pol.partner_id
 ORDER BY pp.id , date_order)
         """)
@@ -120,13 +130,24 @@ ORDER BY pp.id , date_order)
         header.append("Move date")
         header.append("Way")
         header.append("Supplier Name")
+        header.append("Purchase Unit Price")
+        header.append("Purchase Unit Price With Tax")
         header.append("Quantity")
+        header.append("Sales Price")
+        header.append("From")
+        header.append("To")
         header.append("Product reference")
         header.append("Essential")
         header.append("Government")
         header.append("Formulary")
+        header.append("Medicine")
+        header.append("Bare Min")
         header.append("Min")
         header.append("Max level")
+        header.append("Antibiotic")
+        header.append("Lab Item")
+        header.append("Medical Item")
+        header.append("Other Item")
         header.append("Running total")
         header.append("Hit/Mis")
         header.append("Stockout duration")
@@ -191,7 +212,9 @@ ORDER BY pp.id , date_order)
                     THEN -1*quantity
             ELSE 1*quantity
                 END) as qty,sm.date_order, sm.way,sm.itemreference,sm.x_low_cost_eq,sm.x_govt,sm.x_formulary,
-                sm.product_min_qty,sm.product_max_qty,sm.product_category,sm.supplier_category,sm.supplier
+                sm.product_min_qty,sm.product_max_qty,
+                sm.product_category,sm.supplier_category,sm.supplier,sm.antibiotic,sm.lab_item,sm.medical_item,sm.other_item,
+                sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item
                 from kpi_data_hospital sm
                 where
                 (location_dest_id in (
@@ -219,22 +242,33 @@ ORDER BY pp.id , date_order)
         sum_stock_out=0
         for row in rows:
             line = []
-            line.append(row[1])
-            line.append(row[11])
-            line.append(row[12])
-            line.append(row[3])
-            line.append(row[4])
-            line.append(row[13])
-            line.append(row[2])
-            line.append(row[5])
-            line.append(row[6])
-            line.append(row[7])
-            line.append(row[8])
-            line.append(row[9])
-            line.append(row[10])
+            line.append(row[1])     #header.append("Product Name")
+            line.append(row[11])    #header.append("Product Category")
+            line.append(row[12])    #header.append("Supplier Category")
+            line.append(row[3])     #header.append("Move date")
+            line.append(row[4])     #header.append("Way")
+            line.append(row[13])    #header.append("Supplier Name")
+            line.append(row[21])    #header.append("Purchase Unit Price")
+            line.append(row[23])    #header.append("Purchase Unit Price With Tax")
+            line.append(row[2])     #header.append("Quantity")
+            line.append(row[18])    #header.append("Sales Price")
+            line.append(row[19])    #header.append("From")
+            line.append(row[20])    #header.append("To")
+            line.append(row[5])     #header.append("Product reference")
+            line.append(row[6])     #header.append("Essential")
+            line.append(row[7])     #header.append("Government")
+            line.append(row[8])     #header.append("Formulary")
+            line.append(row[24])     #header.append("Medicine")
+            line.append(row[22])     #header.append("Bare Min")
+            line.append(row[9])     #header.append("Min")
+            line.append(row[10])    #header.append("Max level")
             max = row[10]
             min = row[9]
             prodID=row[0]
+            line.append(row[14])    #header.append("Antibiotic")
+            line.append(row[15])    #header.append("Lab Item")
+            line.append(row[16])    #header.append("Medical Item")
+            line.append(row[17])    #header.append("Other Item")
             if last_prod_id != prodID :
                 if prodID not in timeProdQtyHash:
                     timeProdQtyHash[prodID]=0.0
@@ -254,7 +288,7 @@ ORDER BY pp.id , date_order)
                 runningTotal = runningTotal + 0
             else:
                 runningTotal = runningTotal + row[2]
-            line.append(runningTotal)
+            line.append(runningTotal)   #header.append("Running total")
             if runningTotal<=0 :
                 line.append("Stockout")
             elif runningTotal <min:
@@ -262,7 +296,7 @@ ORDER BY pp.id , date_order)
             elif runningTotal >max :
                 line.append("A Max")
             else:
-                line.append("Hit")
+                line.append("Hit")      #header.append("Hit/Mis")
             if sum_stock_out==1:
                 lday = datetime.strptime(last_date, self._date_time_format)
                 cday = datetime.strptime(row[3], self._date_time_format)
@@ -274,7 +308,7 @@ ORDER BY pp.id , date_order)
                 sum_stock_out=1
             else:
                 sum_stock_out=0
-            line.append(stockout_duration)
+            line.append(stockout_duration)  #header.append("Stockout duration")
             last_date=row[3]
             out.append(line)
         return out
