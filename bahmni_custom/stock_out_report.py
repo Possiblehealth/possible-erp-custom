@@ -69,7 +69,7 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
        pc.name as product_category,
        rp.name as supplier,
        pol.price_unit as purchase_price,at.amount as ptax,
-    (pol.price_unit+(pol.price_unit*at.amount)) as amtwithtax
+    (pol.price_unit+(pol.price_unit*coalesce(at.amount,0))) as amtwithtax
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id

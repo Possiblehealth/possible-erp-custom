@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="utf-8"?>
 <openerp>
     <data>
-        <menuitem id="custom_report" parent="base.menu_reporting" name="Custom Reports Report" sequence="1"/>
+        <menuitem id="custom_report" parent="base.menu_reporting" name="Custom Reports" groups="base.group_user" sequence="2"/>
         <!--For Accounts Supplier Reference-->
         <record id="account_reference_form_extension_new" model="ir.ui.view">
             <field name="name">account.reference.form.inherited</field>
