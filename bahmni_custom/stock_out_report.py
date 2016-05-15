@@ -65,7 +65,7 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
   pp.antibiotic,pp.other_item,pp.medical_item,pp.lab_item,
   pp.medicine_item,
        xpsc.x_name as supplier_category,
-  pt.list_price,
+  pt.list_price,po.name as poname,
        pc.name as product_category,
        rp.name as supplier,
        pol.price_unit as purchase_price,at.amount as ptax,
@@ -96,6 +96,7 @@ from
   LEFT JOIN product_category pc on pt.categ_id= pc.id
   LEFT JOIN purchase_order_line pol on pol.id=sm.purchase_line_id
   LEFT JOIN purchase_order_taxe pot on pot.ord_id = pol.id
+  LEFT JOIN purchase_order po on pol.order_id = po.id
   LEFT JOIN account_tax at on at.id = pot.tax_id
   LEFT JOIN stock_location dstloc on dstloc.id = sm.location_dest_id
   LEFT JOIN stock_location srcloc on srcloc.id = sm.location_id
@@ -130,6 +131,7 @@ ORDER BY pp.id , date_order)
         header.append("Move date")
         header.append("Way")
         header.append("Supplier Name")
+        header.append("PO Name")
         header.append("Purchase Unit Price")
         header.append("Purchase Unit Price With Tax")
         header.append("Quantity")
@@ -214,7 +216,7 @@ ORDER BY pp.id , date_order)
                 END) as qty,sm.date_order, sm.way,sm.itemreference,sm.x_low_cost_eq,sm.x_govt,sm.x_formulary,
                 sm.product_min_qty,sm.product_max_qty,
                 sm.product_category,sm.supplier_category,sm.supplier,sm.antibiotic,sm.lab_item,sm.medical_item,sm.other_item,
-                sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item
+                sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname
                 from kpi_data_hospital sm
                 where
                 (location_dest_id in (
@@ -248,6 +250,7 @@ ORDER BY pp.id , date_order)
             line.append(row[3])     #header.append("Move date")
             line.append(row[4])     #header.append("Way")
             line.append(row[13])    #header.append("Supplier Name")
+            line.append(row[25])    #header.append("PO Name")
             line.append(row[21])    #header.append("Purchase Unit Price")
             line.append(row[23])    #header.append("Purchase Unit Price With Tax")
             line.append(row[2])     #header.append("Quantity")
