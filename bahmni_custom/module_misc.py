@@ -45,6 +45,31 @@ class res_partner(osv.osv):
         }
 res_partner()
 
+class stock_warehouse_orderpoint(osv.osv):
+    _name = 'stock.warehouse.orderpoint'
+    _inherit = 'stock.warehouse.orderpoint'
+
+    _columns={
+        'x_bare_minimum':fields.integer('Bare Minimum')
+    }
+stock_warehouse_orderpoint()
+
+class product_template(osv.osv):
+    _name = 'product.template'
+    _inherit = 'product.template'
+
+    _columns={
+        'x_formulary':fields.boolean('Formulary'),
+        'x_govt':fields.boolean('Govt Supply'),
+        'x_low_cost_eq':fields.boolean('MOHP Essential Medicine')
+        }
+    _default={
+        'x_formulary':False,
+        'x_govt':False,
+        'x_low_cost_eq':False
+    }
+product_template()
+
 class product_product(osv.osv):
     _name = 'product.product'
     _inherit = 'product.product'
