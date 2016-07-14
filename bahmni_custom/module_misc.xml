@@ -158,7 +158,6 @@
             </field>
         </record>
 
-
         <record id="view_stock_warehouse_orderpoint_form_ext" model="ir.ui.view">
             <field name="name">stock.warehouse.orderpoint.tree</field>
             <field name="model">stock.warehouse.orderpoint</field>
@@ -169,6 +168,19 @@
                 </xpath>
             </field>
         </record>
+
+        <!--Add Customer category for Batch Number-->
+
+            <record model="ir.ui.view" id="view_move_form_expiry">
+                <field name="name">stock.production.lot.form</field>
+                <field name="model">stock.production.lot</field>
+                <field name="inherit_id" ref="stock.view_production_lot_form" />
+                <field name="arch" type="xml">
+                    <xpath expr="//field[@name='prefix']" position="after">
+                        <field name="x_supplier_category" />
+                    </xpath>
+                </field>
+            </record>
 
     </data>
 </openerp>

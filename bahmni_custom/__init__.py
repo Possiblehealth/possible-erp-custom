@@ -4,3 +4,4 @@ import sales_by_supplier_category_report
 import moving_inventory_analysis
 import stock_out_report
 import min_max_report
+import supplier_category
