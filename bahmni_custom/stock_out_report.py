@@ -69,7 +69,8 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
        pc.name as product_category,
        rp.name as supplier,
        pol.price_unit as purchase_price,at.amount as ptax,
-    (pol.price_unit+(pol.price_unit*coalesce(at.amount,0))) as amtwithtax
+    (pol.price_unit+(pol.price_unit*coalesce(at.amount,0))) as amtwithtax,
+    spl.sale_price as lot_sp
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id
@@ -216,7 +217,7 @@ ORDER BY pp.id , date_order)
                 END) as qty,sm.date_order, sm.way,sm.itemreference,sm.x_low_cost_eq,sm.x_govt,sm.x_formulary,
                 sm.product_min_qty,sm.product_max_qty,
                 sm.product_category,sm.supplier_category,sm.supplier,sm.antibiotic,sm.lab_item,sm.medical_item,sm.other_item,
-                sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname
+                sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname,sm.lot_sp
                 from kpi_data_hospital sm
                 where
                 (location_dest_id in (
@@ -254,7 +255,10 @@ ORDER BY pp.id , date_order)
             line.append(row[21])    #header.append("Purchase Unit Price")
             line.append(row[23])    #header.append("Purchase Unit Price With Tax")
             line.append(row[2])     #header.append("Quantity")
-            line.append(row[18])    #header.append("Sales Price")
+            if row[25]:
+                line.append(row[26])    #header.append("Sales Price")
+            else:
+                line.append(row[18])    #header.append("Sales Price")
             line.append(row[19])    #header.append("From")
             line.append(row[20])    #header.append("To")
             line.append(row[5])     #header.append("Product reference")
