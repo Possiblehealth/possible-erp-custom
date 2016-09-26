@@ -70,7 +70,8 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
        rp.name as supplier,
        pol.price_unit as purchase_price,at.amount as ptax,
     (pol.price_unit+(pol.price_unit*coalesce(at.amount,0))) as amtwithtax,
-    spl.sale_price as lot_sp
+    spl.sale_price as lot_sp,
+      spl.name as batch_number
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id
@@ -217,7 +218,8 @@ ORDER BY pp.id , date_order)
                 END) as qty,sm.date_order, sm.way,sm.itemreference,sm.x_low_cost_eq,sm.x_govt,sm.x_formulary,
                 sm.product_min_qty,sm.product_max_qty,
                 sm.product_category,sm.supplier_category,sm.supplier,sm.antibiotic,sm.lab_item,sm.medical_item,sm.other_item,
-                sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname,sm.lot_sp
+                sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname,sm.lot_sp,
+                sm.batch_number
                 from kpi_data_hospital sm
                 where
                 (location_dest_id in (
@@ -255,7 +257,7 @@ ORDER BY pp.id , date_order)
             line.append(row[21])    #header.append("Purchase Unit Price")
             line.append(row[23])    #header.append("Purchase Unit Price With Tax")
             line.append(row[2])     #header.append("Quantity")
-            if row[25]:
+            if row[27]:
                 line.append(row[26])    #header.append("Sales Price")
             else:
                 line.append(row[18])    #header.append("Sales Price")
@@ -270,7 +272,7 @@ ORDER BY pp.id , date_order)
             line.append(row[9])     #header.append("Min")
             line.append(row[10])    #header.append("Max level")
             max = row[10]
-            min = row[9]
+            min = row[22]
             prodID=row[0]
             line.append(row[14])    #header.append("Antibiotic")
             line.append(row[15])    #header.append("Lab Item")
@@ -316,6 +318,7 @@ ORDER BY pp.id , date_order)
             else:
                 sum_stock_out=0
             line.append(stockout_duration)  #header.append("Stockout duration")
+            line.append(row[27])
             last_date=row[3]
             out.append(line)
         return out

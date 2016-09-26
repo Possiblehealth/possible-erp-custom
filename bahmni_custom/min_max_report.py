@@ -47,7 +47,8 @@ class min_max_report(osv.osv):
   rp.name as supplier,
   pol.price_unit as purchase_price,at.amount as ptax,
   (pol.price_unit+(pol.price_unit*coalesce(at.amount,0))) as amtwithtax,
-  spl.sale_price as lot_sp
+  spl.sale_price as lot_sp,
+  spl.name as batch_number
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id
@@ -115,6 +116,7 @@ ORDER BY pp.id , date_order)
         header.append("Running total")
         header.append("Hit/Mis")
         header.append("Stockout duration")
+        header.append("Batch Number")
         return header;
     def export_data(self, cr, uid, start_date, end_date,context=None):
         # if not product:
@@ -148,7 +150,7 @@ ORDER BY pp.id , date_order)
             END) as qty,sm.date_order, sm.way,sm.itemreference,sm.x_low_cost_eq,sm.x_govt,sm.x_formulary,
             sm.product_min_qty,sm.product_max_qty,sm.product_category,sm.supplier_category,sm.supplier,
             sm.antibiotic,sm.lab_item,sm.medical_item,sm.other_item,sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,
-            sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname,sm.lot_sp
+            sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname,sm.lot_sp,sm.batch_number
             from kpi_data_store sm
             where
             (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
@@ -173,7 +175,7 @@ ORDER BY pp.id , date_order)
             line.append(row[21])
             line.append(row[23])    #header.append("Purchase Unit Price With Tax")
             line.append(row[2])
-            if row[25]:
+            if row[27]:
                 line.append(row[26])    #header.append("Sales Price")
             else:
                 line.append(row[18])    #header.append("Sales Price")
@@ -188,7 +190,7 @@ ORDER BY pp.id , date_order)
             line.append(row[9])
             line.append(row[10])
             max = row[10]
-            min = row[9]
+            min = row[22]
             prodID=row[0]
             line.append(row[14])
             line.append(row[15])
@@ -234,6 +236,8 @@ ORDER BY pp.id , date_order)
             else:
                 sum_stock_out=0
             line.append(stockout_duration)
+            line.append(row[27])
+
             last_date=row[3]
             out.append(line)
         return out
