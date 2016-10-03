@@ -33,6 +33,7 @@
                         <no-data value="No data available"/>
                         <enable-download value="True"/>
                         <download-label value="Download KPI Data - Storeroom"/>
+                        <show-locations value="True" />
                         <enable-autocomplete value="False"/>
                         <autocomplete-label value="Product"/>
                     </options>

@@ -22,14 +22,15 @@ class min_max_report(osv.osv):
         'quantity':fields.float('Quantity',readonly=True),
         'id':fields.integer('Product ID',readonly=True),
             }
-    def init(self,cr):
-        drop_view_if_exists(cr,'kpi_data_store')
+    def create_KPI_Sheet_View(self,cr,location_id,view_name):
+
+        drop_view_if_exists(cr,view_name)
         cr.execute("""
-        create or replace view kpi_data_store AS(select row_number() OVER (order by sm.write_date) as id,pp.name_template as name,
+        create or replace view {view_name} AS(select row_number() OVER (order by sm.write_date) as id,pp.name_template as name,
        pp.id as product_id,sm.product_qty as quantity,sm.write_date as date_order,
   sm.location_dest_id, sm.location_id,sm.prodlot_id,
-  CASE WHEN sm.location_dest_id =27 THEN '+'
-  WHEN sm.location_id =27 THEN '-'
+  CASE WHEN sm.location_dest_id ={location_id} THEN '+'
+  WHEN sm.location_id = {location_id}  THEN '-'
   ELSE '*'
   END as way,
   srcloc.name as fromloc,
@@ -52,8 +53,8 @@ class min_max_report(osv.osv):
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id
-       and sm.state='done' AND (sm.location_dest_id=27 or sm.location_id=27)
-    LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id=sm.product_id and swo.location_id = (SELECT id FROM stock_location where name = 'BPH Storeroom')
+       and sm.state='done' AND (sm.location_dest_id={location_id} or sm.location_id={location_id})
+    LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id=sm.product_id and swo.location_id = {location_id}
     LEFT JOIN product_template pt on pt.id = pp.product_tmpl_id
     LEFT JOIN stock_production_lot spl on spl.id=sm.prodlot_id
     LEFT JOIN x_product_supplier_category xpsc on xpsc.id=spl.x_supplier_category
@@ -66,7 +67,7 @@ from
   LEFT JOIN stock_location dstloc on dstloc.id = sm.location_dest_id
   LEFT JOIN stock_location srcloc on srcloc.id = sm.location_id
 ORDER BY pp.id , date_order)
-        """)
+        """.format(location_id=location_id,view_name=view_name))
 
     def unlink(self, cr, uid, ids, context=None):
         raise osv.except_osv(_('Error!'), _('You cannot delete any record!'))
@@ -118,14 +119,16 @@ ORDER BY pp.id , date_order)
         header.append("Stockout duration")
         header.append("Batch Number")
         return header;
-    def export_data(self, cr, uid, start_date, end_date,context=None):
+    def export_data(self, cr, uid, start_date, end_date, location_id, view_name, context=None):
+
+        self.create_KPI_Sheet_View(cr, location_id, view_name)
         # if not product:
         #     raise osv.except_osv(('Error'), ('Please choose a product to show the graph'))
         if not start_date:
             raise osv.except_osv(('Error'), ('Please choose a start date to show the graph'))
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
-        productsIds = self.pool.get('stock.location').search(cr, uid, [('name', '=', 'BPH Storeroom')],limit=10, context=context)
+        productsIds = self.pool.get('stock.location').search(cr, uid, [('id', '=', location_id)],limit=10, context=context)
 
         a = datetime.strptime(start_date, self._date_format)
         b = datetime.strptime(end_date, self._date_format)
@@ -139,7 +142,7 @@ ORDER BY pp.id , date_order)
                 ELSE -1*quantity
                 END) as qty
                 from product_product pp
-                LEFT JOIN kpi_data_store sm on sm.product_id= pp.id and
+                LEFT JOIN """+view_name+""" sm on sm.product_id= pp.id and
                 (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order<'"+start_date+"""'
                 GROUP BY pp.name_template,pp.id""")
         rows = cr.fetchall()
@@ -151,7 +154,7 @@ ORDER BY pp.id , date_order)
             sm.product_min_qty,sm.product_max_qty,sm.product_category,sm.supplier_category,sm.supplier,
             sm.antibiotic,sm.lab_item,sm.medical_item,sm.other_item,sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,
             sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname,sm.lot_sp,sm.batch_number
-            from kpi_data_store sm
+            from """+view_name+""" sm
             where
             (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
             ORDER BY product_id,sm.date_order asc""")
@@ -242,6 +245,18 @@ ORDER BY pp.id , date_order)
             out.append(line)
         return out
 
+    def getAllLocations(self, cr, uid, usage, context):
+        def getLocation(locationId):
+            return self._getLocation(cr, uid, locationId, context=context)
+
+        locationIds = self.pool.get('stock.location').search(cr, uid, [('usage', '=', usage), ('active', '=', True)],
+                                                             context=context)
+        return map(getLocation, locationIds or [])
+
+    def _getLocation(self, cr, uid, locationId, context=None):
+        location = self.pool.get('stock.location').browse(cr, uid, locationId, context=context)
+        return {'name': location.name, 'id': location.id}
+
     def addNameToDictionary(self,d, tup):
         if tup[0] not in d:
             d[tup[0]] = {}
@@ -264,14 +279,14 @@ ORDER BY pp.id , date_order)
             lastDayProdQtyMap=timeProdQtyHash[currentDay]
 
     def chart_d3_get_data(self, cr, uid, xaxis, yaxis, domain, group_by, options,
-        product, start_date, end_date, context=None):
+        product, start_date, end_date, location_id, context=None):
         # if not product:
         #     raise osv.except_osv(('Error'), ('Please choose a product to show the graph'))
         if not start_date:
             raise osv.except_osv(('Error'), ('Please choose a start date to show the graph'))
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
-        productsIds = self.pool.get('stock.location').search(cr, uid, [('name', '=', 'BPH Storeroom')],limit=10, context=context)
+        productsIds = self.pool.get('stock.location').search(cr, uid, [('id', '=', location_id)],limit=10, context=context)
 
         a = datetime.strptime(start_date, self._date_format)
         b = datetime.strptime(end_date, self._date_format)

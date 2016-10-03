@@ -193,7 +193,7 @@ class IrUiViewChartD3(osv.AbstractModel):
         return res;
 
     def get_data(self, cr, uid, model, xaxis, yaxis, domain, groupby, options,
-                 product, start_date, end_date, context=None):
+                 product, start_date, end_date, location_id, context=None):
         obj = self.pool.get(model)
         group_by = []
         for gb in groupby:

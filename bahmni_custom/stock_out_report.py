@@ -156,7 +156,7 @@ ORDER BY pp.id , date_order)
         header.append("Hit/Mis")
         header.append("Stockout duration")
         return header
-    def export_data(self, cr, uid, start_date, end_date,context=None):
+    def export_data(self, cr, uid, start_date, end_date, location_id, view_name, context=None):
         # if not product:
         #     raise osv.except_osv(('Error'), ('Please choose a product to show the graph'))
         if not start_date:

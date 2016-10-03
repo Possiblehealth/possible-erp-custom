@@ -34,6 +34,7 @@
                         <enable-download value="True"/>
                         <download-label value="Download KPI Data - Hospital"/>
                         <enable-autocomplete value="False"/>
+                        <show-locations value="False" />
                         <autocomplete-label value="Product"/>
                     </options>
                 </chart-d3>

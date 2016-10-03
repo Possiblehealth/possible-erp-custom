@@ -27,7 +27,7 @@ class ChartD3(openerpweb.Controller):
 
     @openerpweb.jsonrequest
     def get_data(self, request, model=None, xaxis=None, yaxis=None, domain=None,
-                 group_by=None, options=None,product=None,start_date=None,end_date=None):
+                 group_by=None, options=None,product=None,start_date=None,end_date=None, location_id=None):
         if domain is None:
             domain = []
 
@@ -42,11 +42,11 @@ class ChartD3(openerpweb.Controller):
         registry = RegistryManager.get(request.session._db)
         if hasattr(registry.get(model), 'chart_d3_get_data'):
             return obj.chart_d3_get_data(
-                xaxis, yaxis, domain, group_by, options,product,start_date,end_date,context=context)
+                xaxis, yaxis, domain, group_by, options,product,start_date,end_date,location_id,context=context)
 
         view = request.session.model('ir.ui.view.chart.d3')
         return view.get_data(
-            model, xaxis, yaxis, domain, group_by, options, product,start_date,end_date,context=context)
+            model, xaxis, yaxis, domain, group_by, options, product,start_date,end_date,location_id,context=context)
 
     def content_disposition(self,request,filename):
         filename = filename.encode('utf8')
@@ -84,17 +84,31 @@ class ChartD3(openerpweb.Controller):
         fp.close()
         return data
 
+    @openerpweb.jsonrequest
+    def get_locations(self, request, locationUsage=None):
+        context = request.context
+        obj = request.session.model('min_max.report')
+        locations = []
+        if hasattr(obj, 'getAllLocations'):
+            locations = obj.getAllLocations(locationUsage, context=context)
+        return locations
+
     @openerpweb.httprequest
     def export(self, request, data, token):
         kwargs = simplejson.loads(data)
         start_date = kwargs.get('start_date')
         end_date = kwargs.get('end_date')
+
+        location_name = kwargs.get('location_name').replace(" ", "_")
+        location_id = kwargs.get('location_id')
+        view_name = "kpi_data_store_{0}_{1}".format(location_id,location_name)
+
         model = kwargs.get('model')
         obj = request.session.model(model)
         registry = RegistryManager.get(request.session._db)
         if hasattr(registry.get(model), 'export_data'):
             data = obj.export_data(
-                start_date,end_date)
+                start_date,end_date,location_id, view_name)
             header = obj.export_header(
                 start_date,end_date)
             return request.make_response(self.from_data(header, data),

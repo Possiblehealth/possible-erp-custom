@@ -164,22 +164,19 @@ nav.oe_chart_d3_field_axis ul ul li {
     margin-bottom: 10px;
 }
 
-.date-container{
+.date-container .start-date, .date-container .end-date{
     margin-bottom: 10px;
 }
-.date-container .start-date{
-    float: left;
-    padding-left: 40px;
-}
-.date-container input#start_date{
+.date-container input#start_date, .date-container input#end_date{
     height: 18px;
+    width: 140px;
 }
-
-.date-container .end-date{
-    float: right;
+.date-container label, .location-container label, .autocomplete-container label{
+    width: 100px;
+    display: inline-block;
 }
-.date-container input#end_date{
-    height: 18px;
+.location-container select{
+    height: 24px;
 }
 
 .action-container {
@@ -196,4 +193,10 @@ nav.oe_chart_d3_field_axis ul ul li {
 .graph-container{
     border: 1px dotted red;
     padding: 10px 20px;
+}
+
+
+.graph-options-container .action-container{
+    float: none;
+    margin-left: 105px;
 }

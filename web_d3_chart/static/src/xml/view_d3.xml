@@ -16,6 +16,11 @@
                         <input type="text" id="end_date" />
                     </div>
                 </div>
+                <div class="location-container">
+                    <label>Location</label>
+                    <select id="location">
+                    </select>
+                </div>
                 <div class="action-container">
                     <button id="showgraph">Show Graph</button>
                     <button id="download_data">Download Data</button>
