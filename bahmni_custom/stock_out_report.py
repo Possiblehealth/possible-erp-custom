@@ -20,7 +20,14 @@ class stock_out_report(osv.osv):
         'quantity':fields.float('Quantity',readonly=True),
         'id':fields.integer('Product ID',readonly=True),
             }
+    _hospitalLocationId=None
+    _stockTransferLocations=None
     def init(self,cr):
+        cr.execute("SELECT value FROM custom_report_props WHERE name='hospitalLocationId'")
+        self._hospitalLocationId = cr.fetchall()[0][0]
+        cr.execute("select value from custom_report_props where name='stockTransferLocationIds'")
+        self._stockTransferLocations = cr.fetchall()[0][0]
+
         drop_view_if_exists(cr,'stock_out_report')
         cr.execute("""
         create or replace view stock_out_report AS(select row_number() OVER (order by sm.write_date) as id,pp.name_template as name,
@@ -33,26 +40,14 @@ from
 GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id ORDER BY pp.id , date_order)
         """)
         drop_view_if_exists(cr,'kpi_data_hospital')
-        cr.execute("""
+        cr.execute(("""
         create or replace view kpi_data_hospital AS(select row_number() OVER (order by sm.write_date) as id,pp.name_template as name,
        pp.id as product_id,sm.product_qty as quantity,sm.write_date as date_order,
   sm.location_dest_id, sm.location_id,sm.prodlot_id,
-       CASE WHEN sm.location_dest_id in (
-         select id from stock_location where name='Inventory loss' or
-                                             name='Customers' or
-                                             name='Suppliers' or
-                                             name='Scrapped' or
-                                             name='BPH Expired' or
-                                             name='BPH Scrap'
-       ) THEN '+'
-       WHEN sm.location_id in (
-         select id from stock_location where name='Inventory loss' or
-                                             name='Customers' or
-                                             name='Suppliers' or
-                                             name='Scrapped' or
-                                             name='BPH Expired' or
-                                             name='BPH Scrap'
-       ) THEN '-'
+       CASE WHEN sm.location_dest_id in ({stockTransferLocations})
+       THEN '+'
+       WHEN sm.location_id in ({stockTransferLocations})
+       THEN '-'
        ELSE '*'
        END as way,
         srcloc.name as fromloc,
@@ -75,23 +70,9 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id
-       and sm.state='done' AND (sm.location_dest_id in (
-    select id from stock_location where name='Inventory loss' or
-                                        name='Customers' or
-                                        name='Suppliers' or
-                                        name='Scrapped' or
-                                        name='BPH Expired' or
-                                        name='BPH Scrap'
-  )
-                                or sm.location_id in (
-    select id from stock_location where name='Inventory loss' or
-                                        name='Customers' or
-                                        name='Suppliers' or
-                                        name='Scrapped' or
-                                        name='BPH Expired' or
-                                        name='BPH Scrap'
-  ))
-  LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id=sm.product_id and swo.location_id = (SELECT id FROM stock_location where name = 'BPH Storeroom')
+       and sm.state='done' AND (sm.location_dest_id in ({stockTransferLocations})
+                                or sm.location_id in ({stockTransferLocations}))
+  LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id=sm.product_id and swo.location_id ={hospitalLocationId}
   LEFT JOIN product_template pt on pt.id = pp.product_tmpl_id
   LEFT JOIN stock_production_lot spl on spl.id=sm.prodlot_id
   LEFT JOIN x_product_supplier_category xpsc on xpsc.id=spl.x_supplier_category
@@ -104,7 +85,7 @@ from
   LEFT JOIN stock_location srcloc on srcloc.id = sm.location_id
   LEFT JOIN res_partner rp on rp.id=pol.partner_id
 ORDER BY pp.id , date_order)
-        """)
+        """).format(hospitalLocationId=self._hospitalLocationId,stockTransferLocations=self._stockTransferLocations))
 
     def unlink(self, cr, uid, ids, context=None):
         raise osv.except_osv(_('Error!'), _('You cannot delete any record!'))
@@ -163,7 +144,6 @@ ORDER BY pp.id , date_order)
             raise osv.except_osv(('Error'), ('Please choose a start date to show the graph'))
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
-        productsIds = self.pool.get('stock.location').search(cr, uid, [('name', '=', 'BPH Storeroom')],limit=10, context=context)
 
         a = datetime.strptime(start_date, self._date_format)
         b = datetime.strptime(end_date, self._date_format)
@@ -173,47 +153,20 @@ ORDER BY pp.id , date_order)
         daybeforestr=datetime.strftime(daybefore,self._date_format)
         date_list = [a + timedelta(days=x) for x in range(0, delta.days)]
         timeProdQtyHash={}
-        cr.execute("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id  in (
-    select id from stock_location where name='Inventory loss' or
-                                        name='Customers' or
-                                        name='Suppliers' or
-                                        name='Scrapped' or
-                                        name='BPH Expired' or
-                                        name='BPH Scrap'
-  ) THEN -1*quantity
+        cr.execute(("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id  in ({stockTransferLocations}) THEN -1*quantity
                     ELSE 1*quantity
                     END) as qty
                     from product_product pp
                     LEFT JOIN kpi_data_hospital sm on sm.product_id= pp.id and
-                    (location_dest_id in (
-    select id from stock_location where name='Inventory loss' or
-                                        name='Customers' or
-                                        name='Suppliers' or
-                                        name='Scrapped' or
-                                        name='BPH Expired' or
-                                        name='BPH Scrap'
-  )
-                     or location_id in (
-    select id from stock_location where name='Inventory loss' or
-                                        name='Customers' or
-                                        name='Suppliers' or
-                                        name='Scrapped' or
-                                        name='BPH Expired' or
-                                        name='BPH Scrap'
-  )) and date_order<'"""+start_date+"""' GROUP BY pp.name_template,pp.id""")
+                    (location_dest_id in ({stockTransferLocations})
+                     or location_id in ({stockTransferLocations})) and date_order<'"""+start_date+
+                   """' GROUP BY pp.name_template,pp.id""").format(stockTransferLocations=self._stockTransferLocations))
 
         rows = cr.fetchall()
         for row in rows:
             timeProdQtyHash[row[0]] = row[2]
-        cr.execute("""SELECT product_id,name,(CASE WHEN sm.location_dest_id in (
-    select id from stock_location where name='Inventory loss' or
-                                        name='Customers' or
-                                        name='Suppliers' or
-                                        name='Scrapped' or
-                                        name='BPH Expired' or
-                                        name='BPH Scrap'
-  )
-                    THEN -1*quantity
+        cr.execute(("""SELECT product_id,name,(CASE WHEN sm.location_dest_id in ({stockTransferLocations})
+            THEN -1*quantity
             ELSE 1*quantity
                 END) as qty,sm.date_order, sm.way,sm.itemreference,sm.x_low_cost_eq,sm.x_govt,sm.x_formulary,
                 sm.product_min_qty,sm.product_max_qty,
@@ -222,21 +175,9 @@ ORDER BY pp.id , date_order)
                 sm.batch_number
                 from kpi_data_hospital sm
                 where
-                (location_dest_id in (
-    select id from stock_location where name='Inventory loss' or
-                                        name='Customers' or
-                                        name='Suppliers' or
-                                        name='Scrapped' or
-                                        name='BPH Expired' or
-                                        name='BPH Scrap'
-  ) or location_id in (
-    select id from stock_location where name='Inventory loss' or
-                                        name='Customers' or
-                                        name='Suppliers' or
-                                        name='Scrapped' or
-                                        name='BPH Expired' or
-                                        name='BPH Scrap'
-  )) and date_order>='"""+start_date+"' and date_order<='"+end_date+"' ORDER BY product_id,sm.date_order asc")
+                (location_dest_id in ({stockTransferLocations}) or location_id in ({stockTransferLocations}))
+                and date_order>='"""+start_date+"' and date_order<='"+end_date+"' "
+                "ORDER BY product_id,sm.date_order asc").format(stockTransferLocations=self._stockTransferLocations))
         out = []
         rows = cr.fetchall()
         # fill hash of hash here
@@ -346,14 +287,13 @@ ORDER BY pp.id , date_order)
             lastDayProdQtyMap=timeProdQtyHash[currentDay]
 
     def chart_d3_get_data(self, cr, uid, xaxis, yaxis, domain, group_by, options,
-        product, start_date, end_date, context=None):
+        product, start_date, end_date,location_id, context=None):
         # if not product:
         #     raise osv.except_osv(('Error'), ('Please choose a product to show the graph'))
         if not start_date:
             raise osv.except_osv(('Error'), ('Please choose a start date to show the graph'))
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
-        productsIds = self.pool.get('stock.location').search(cr, uid, [('name', '=', 'BPH Storeroom')],limit=10, context=context)
 
         a = datetime.strptime(start_date, self._date_format)
         b = datetime.strptime(end_date, self._date_format)
@@ -363,12 +303,12 @@ ORDER BY pp.id , date_order)
         daybeforestr=datetime.strftime(daybefore,self._date_format)
         date_list = [a + timedelta(days=x) for x in range(0, delta.days)]
         timeProdQtyHash={}
-        cr.execute("select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id = "+str(productsIds[0])+""" THEN 1*quantity
+        cr.execute("select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id = "+self._hospitalLocationId+""" THEN 1*quantity
                 ELSE -1*quantity
                 END) as qty
                 from product_product pp
                 LEFT JOIN stock_out_report sm on sm.product_id= pp.id and
-                (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order<'"+start_date+"""'
+                (location_dest_id="""+self._hospitalLocationId+" or location_id="+self._hospitalLocationId+") and date_order<'"+start_date+"""'
                 GROUP BY pp.name_template,pp.id""")
         rows = cr.fetchall()
         for row in rows:
@@ -381,12 +321,12 @@ ORDER BY pp.id , date_order)
 # LEFT JOIN stock_move_inventory_report sm on sm.product_id= pp.id
 # and (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
 #             GROUP BY pp.name_template,pp.id,sm.date_order ORDER BY sm.date_order asc""")
-        cr.execute("SELECT product_id,name,sum(CASE WHEN sm.location_dest_id = "+str(productsIds[0])+""" THEN 1*quantity
+        cr.execute("SELECT product_id,name,sum(CASE WHEN sm.location_dest_id = "+self._hospitalLocationId+""" THEN 1*quantity
         ELSE -1*quantity
             END) as way,sm.date_order
             from stock_out_report sm
             where
-            (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
+            (location_dest_id="""+self._hospitalLocationId+" or location_id="+self._hospitalLocationId+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
             GROUP BY sm.name,sm.date_order,sm.product_id ORDER BY sm.date_order asc""")
 
         rows = cr.fetchall()
