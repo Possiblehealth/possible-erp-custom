@@ -45,9 +45,9 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
        pp.id as product_id,sm.product_qty as quantity,sm.write_date as date_order,
   sm.location_dest_id, sm.location_id,sm.prodlot_id,
        CASE WHEN sm.location_dest_id in ({stockTransferLocations})
-       THEN '+'
-       WHEN sm.location_id in ({stockTransferLocations})
        THEN '-'
+       WHEN sm.location_id in ({stockTransferLocations})
+       THEN '+'
        ELSE '*'
        END as way,
         srcloc.name as fromloc,
@@ -265,12 +265,11 @@ ORDER BY pp.id , date_order)
         return out
 
 
-    def addNameToDictionary(self,d, tup):
-        if tup[0] not in d:
-            d[tup[0]] = {}
-        if tup[2] is None:
-            tup[2] = 0
-        d[tup[0]][tup[1]] = tup[2]
+    def addNameToDictionary(self,dictionary, date, productId, quantity):
+        if date not in dictionary:
+            dictionary[date] = {}
+        dictionary[date][productId] = quantity or 0
+
     def normalizeDict(self,timeProdQtyHash,date_list,daybeforestr):
         lastDay = datetime.strptime(daybeforestr, self._date_format)
         lastDayProdQtyMap = timeProdQtyHash[daybeforestr]
@@ -303,17 +302,17 @@ ORDER BY pp.id , date_order)
         daybeforestr=datetime.strftime(daybefore,self._date_format)
         date_list = [a + timedelta(days=x) for x in range(0, delta.days)]
         timeProdQtyHash={}
-        cr.execute("select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id = "+self._hospitalLocationId+""" THEN 1*quantity
-                ELSE -1*quantity
+        cr.execute("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id in ({stockTransferLocations}) THEN -1*quantity
+                ELSE 1*quantity
                 END) as qty
                 from product_product pp
+                INNER JOIN product_template pt ON pp.id = pt.id AND pt.x_formulary IS TRUE
                 LEFT JOIN stock_out_report sm on sm.product_id= pp.id and
-                (location_dest_id="""+self._hospitalLocationId+" or location_id="+self._hospitalLocationId+") and date_order<'"+start_date+"""'
-                GROUP BY pp.name_template,pp.id""")
+                (location_dest_id in ({stockTransferLocations}) or location_id in ({stockTransferLocations})) and date_order<'{start_date}'
+                GROUP BY pp.name_template,pp.id""".format(start_date=start_date,stockTransferLocations=self._stockTransferLocations))
         rows = cr.fetchall()
         for row in rows:
-            arg=[daybeforestr,row[0],row[2]]
-            self.addNameToDictionary(timeProdQtyHash,arg)
+            self.addNameToDictionary(timeProdQtyHash,daybeforestr,row[0],row[2])
 
 #         cr.execute("select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id =  "+str(productsIds[0])+""" THEN 1*quantity
 #         ELSE -1*quantity
@@ -321,19 +320,21 @@ ORDER BY pp.id , date_order)
 # LEFT JOIN stock_move_inventory_report sm on sm.product_id= pp.id
 # and (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
 #             GROUP BY pp.name_template,pp.id,sm.date_order ORDER BY sm.date_order asc""")
-        cr.execute("SELECT product_id,name,sum(CASE WHEN sm.location_dest_id = "+self._hospitalLocationId+""" THEN 1*quantity
-        ELSE -1*quantity
+        cr.execute("""SELECT sm.product_id,sm.name,sum(CASE WHEN sm.location_dest_id in ({stockTransferLocations}) THEN -1*quantity
+            ELSE 1*quantity
             END) as way,sm.date_order
             from stock_out_report sm
+            INNER JOIN product_template pt ON sm.product_id = pt.id AND pt.x_formulary IS TRUE
             where
-            (location_dest_id="""+self._hospitalLocationId+" or location_id="+self._hospitalLocationId+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
-            GROUP BY sm.name,sm.date_order,sm.product_id ORDER BY sm.date_order asc""")
+            (location_dest_id in ({stockTransferLocations}) or location_id in ({stockTransferLocations}))
+            and date_order>='{start_date}' and date_order<='{end_date}'
+            GROUP BY sm.name,sm.date_order,sm.product_id
+            ORDER BY sm.date_order asc""".format(start_date=start_date,end_date=end_date,stockTransferLocations=self._stockTransferLocations))
 
         rows = cr.fetchall()
 # fill hash of hash here
         for row in rows:
-            arg=(row[3],row[0],row[2])
-            self.addNameToDictionary(timeProdQtyHash,arg)
+            self.addNameToDictionary(timeProdQtyHash,row[3],row[0],row[2])
         self.normalizeDict(timeProdQtyHash,date_list,daybeforestr)
         res = [];
         dataset={}

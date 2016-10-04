@@ -257,12 +257,11 @@ ORDER BY pp.id , date_order)
         location = self.pool.get('stock.location').browse(cr, uid, locationId, context=context)
         return {'name': location.name, 'id': location.id}
 
-    def addNameToDictionary(self,d, tup):
-        if tup[0] not in d:
-            d[tup[0]] = {}
-        if tup[2] is None:
-            tup[2] = 0
-        d[tup[0]][tup[1]] = tup[2]
+    def addNameToDictionary(self,dictionary, date, productId, quantity):
+        if date not in dictionary:
+            dictionary[date] = {}
+        dictionary[date][productId] = quantity or 0
+
     def normalizeDict(self,timeProdQtyHash,date_list,daybeforestr):
         lastDay = datetime.strptime(daybeforestr, self._date_format)
         lastDayProdQtyMap = timeProdQtyHash[daybeforestr]
@@ -305,9 +304,7 @@ ORDER BY pp.id , date_order)
                 GROUP BY pp.name_template,pp.id""")
         rows = cr.fetchall()
         for row in rows:
-            arg=[daybeforestr,row[0],row[2]]
-            self.addNameToDictionary(timeProdQtyHash,arg)
-
+            self.addNameToDictionary(timeProdQtyHash,daybeforestr,row[0],row[2])
 #         cr.execute("select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id =  "+str(productsIds[0])+""" THEN 1*quantity
 #         ELSE -1*quantity
 #             END) as way,sm.date_order from product_product pp
@@ -325,8 +322,7 @@ ORDER BY pp.id , date_order)
         rows = cr.fetchall()
 # fill hash of hash here
         for row in rows:
-            arg=(row[3],row[0],row[2])
-            self.addNameToDictionary(timeProdQtyHash,arg)
+            self.addNameToDictionary(timeProdQtyHash,row[3],row[0],row[2])
         self.normalizeDict(timeProdQtyHash,date_list,daybeforestr)
         cr.execute("""select pp.id,pp.name_template,product_min_qty,product_max_qty  from product_product pp
         LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id= pp.id and location_id="""+str(productsIds[0]))
