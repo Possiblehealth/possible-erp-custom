@@ -3,7 +3,7 @@ from openerp.tools.translate import _
 from openerp.tools.sql import drop_view_if_exists
 import logging
 
-class supplier_category_report(osv.osv):
+class sales_by_supplier_category_report(osv.osv):
     _name = 'sale_supplier_category.report'
     _description = 'Sale Supplier Category Name'
     _auto = False
@@ -34,4 +34,4 @@ product_template pt on pt.id = pp.product_tmpl_id
         """)
     def unlink(self, cr, uid, ids, context=None):
         raise osv.except_osv(_('Error!'), _('You cannot delete any record!'))
-supplier_category_report()
+sales_by_supplier_category_report()

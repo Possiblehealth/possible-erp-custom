@@ -46,7 +46,7 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
         return res;
 
     def chart_d3_get_data(self, cr, uid, xaxis, yaxis, domain, group_by, options,
-        product, start_date, end_date,location_id, context=None):
+        product, start_date, end_date, context=None):
         if not product:
             raise osv.except_osv(('Error'), ('Please choose a product to show the graph'))
         if not start_date:

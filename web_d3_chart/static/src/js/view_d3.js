@@ -53,6 +53,13 @@ openerp.web_d3_chart = function(instance) {
                 $('.location-container').show();
             }
         },
+        showGraphOptions: function(){
+            var self = this;
+            $('.graph-options').hide();
+            if(self.bool(self.d3_options["show-graphs"])){
+                $('.graph-options').show();
+            }
+        },
         populateLocations:function(){
             var self = this;
             self.rpc("/web/chartd3/get_locations", {
@@ -68,6 +75,7 @@ openerp.web_d3_chart = function(instance) {
             var self = this;
 
             self.showLocationPicker();
+            self.showGraphOptions();
             if(self.bool(self.d3_options["show-locations"])){
                 self.populateLocations();
             }
@@ -159,7 +167,6 @@ openerp.web_d3_chart = function(instance) {
                         .margin({top: 30});
                     chart.useInteractiveGuideline(true);
                     chart.dispatch.on('renderEnd', function(){
-                       // console.log('render complete');
                     });
                     var options = $.extend({}, self.d3_options);
                     self.apply_field_axis_options(chart, options);
@@ -281,9 +288,6 @@ openerp.web_d3_chart = function(instance) {
         },
         apply_field_axis_options: function(chart, options) {
             var self = this;
-            //console.log("options");
-            //console.log(self.xaxisOpts);
-            //console.log(self.yaxis);
             var mode = this.d3_options.mode;
             var xLabel = this.xaxisOpts[this.xaxis].label;
             var xTickFormat = this.xaxisOpts[this.xaxis]["tick-format"];
@@ -422,8 +426,6 @@ openerp.web_d3_chart = function(instance) {
             _(this.get_nodes(fields_view, axis, true)).each(function (field) {
                 nodes[field.attrs.name] = field.attrs
             });
-            //console.log("called wiht axis="+axis);
-           // console.log(nodes);
             return nodes;
         },
         apply_yn_axis: function(node, values, field_axis){
@@ -480,7 +482,6 @@ openerp.web_d3_chart = function(instance) {
                 product:self.autocomplete_data(),
                 start_date:self.startDate(),
                 end_date:self.endDate(),
-                location_id:self.getLocationId(),
                 context: context}).then(function(data_and_options) {
                     self.d3_data = data_and_options[0];
                     self.d3_options = data_and_options[1];
@@ -490,8 +491,6 @@ openerp.web_d3_chart = function(instance) {
         },
         load_chart: function(fields_view) {
             var self = this;
-            //console.log("fields_view");
-            //console.log(fields_view);
             this.xaxisOpts = this.get_yaxis(fields_view, 'x-axis');
             this.xaxis = this.get_fieldname(fields_view, 'x-axis');
             this.yaxis = this.get_yaxis(fields_view, 'y-axis');

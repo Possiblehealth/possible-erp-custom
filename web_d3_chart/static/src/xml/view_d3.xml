@@ -22,13 +22,13 @@
                     </select>
                 </div>
                 <div class="action-container">
-                    <button id="showgraph">Show Graph</button>
+                    <button id="showgraph" class="graph-options">Show Graph</button>
                     <button id="download_data">Download Data</button>
                 </div>
             </div>
 
         </div>
-        <div class="graph-container">
+        <div class="graph-container graph-options">
             <div class="action-container">
                 <button id="zoomIn">zoomIn</button>
                 <button id="zoomOut">zoomOut</button>

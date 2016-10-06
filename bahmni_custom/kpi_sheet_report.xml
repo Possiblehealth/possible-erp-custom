@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="utf-8"?>
+<openerp>
+    <data>
+        <record id="kpi_report_graph" model="ir.ui.view">
+            <field name="name">kpi_sheet.report.graph</field>
+            <field name="model">kpi_sheet.report</field>
+            <field name="arch" type="xml">
+                <chart-d3 string="View Name" version="7.0" type="line">
+                    <x-axis>
+                        <field name="name" tick-format="d" label="name"/>
+                    </x-axis>
+                    <y-axis>
+                        <field name="quantity" label="Date" tick-format=".2f"/>
+                    </y-axis>
+                    <options>
+                        <no-data value="No data available"/>
+                        <enable-download value="True"/>
+                        <download-label value="Download KPI Data"/>
+                        <show-locations value="True"/>
+                        <enable-autocomplete value="False"/>
+                        <autocomplete-label value="Product"/>
+                        <show-graphs value="False"/>
+                    </options>
+                </chart-d3>
+            </field>
+        </record>
+
+        <record model="ir.actions.act_window" id="action_show_kpi_sheet">
+            <field name="name">KPI Sheet for Locations</field>
+            <field name="res_model">kpi_sheet.report</field>
+            <field name="type">ir.actions.act_window</field>
+            <field name="view_type">tree</field>
+            <field name="view_mode">chart-d3</field>
+            <field name="context">{}</field>
+        </record>
+        <menuitem id="menu_kpi_sheet_main" parent="custom_report" name="KPI Sheet for Locations" sequence="11"
+                  action="action_show_kpi_sheet"/>
+    </data>
+</openerp>

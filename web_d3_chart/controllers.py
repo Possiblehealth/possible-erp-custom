@@ -27,7 +27,7 @@ class ChartD3(openerpweb.Controller):
 
     @openerpweb.jsonrequest
     def get_data(self, request, model=None, xaxis=None, yaxis=None, domain=None,
-                 group_by=None, options=None,product=None,start_date=None,end_date=None, location_id=None):
+                 group_by=None, options=None,product=None,start_date=None,end_date=None):
         if domain is None:
             domain = []
 
@@ -42,11 +42,11 @@ class ChartD3(openerpweb.Controller):
         registry = RegistryManager.get(request.session._db)
         if hasattr(registry.get(model), 'chart_d3_get_data'):
             return obj.chart_d3_get_data(
-                xaxis, yaxis, domain, group_by, options,product,start_date,end_date,location_id,context=context)
+                xaxis, yaxis, domain, group_by, options,product,start_date,end_date,context=context)
 
         view = request.session.model('ir.ui.view.chart.d3')
         return view.get_data(
-            model, xaxis, yaxis, domain, group_by, options, product,start_date,end_date,location_id,context=context)
+            model, xaxis, yaxis, domain, group_by, options, product,start_date,end_date,context=context)
 
     def content_disposition(self,request,filename):
         filename = filename.encode('utf8')
@@ -87,7 +87,7 @@ class ChartD3(openerpweb.Controller):
     @openerpweb.jsonrequest
     def get_locations(self, request, locationUsage=None):
         context = request.context
-        obj = request.session.model('min_max.report')
+        obj = request.session.model('kpi_sheet.report')
         locations = []
         if hasattr(obj, 'getAllLocations'):
             locations = obj.getAllLocations(locationUsage, context=context)
