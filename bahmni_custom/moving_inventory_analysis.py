@@ -16,10 +16,10 @@ class stock_move_inventory_report(osv.osv):
         'quantity':fields.float('Quantity',readonly=True),
         'id':fields.integer('Product ID',readonly=True),
             }
-    _hospitalLocationId=None
+    _mainLocationId=None
     def init(self,cr):
-        cr.execute("SELECT value FROM custom_report_props WHERE name='hospitalLocationId'")
-        self._hospitalLocationId = cr.fetchall()[0][0]
+        cr.execute("SELECT value FROM custom_report_props WHERE name='mainLocationId'")
+        self._mainLocationId = cr.fetchall()[0][0]
         drop_view_if_exists(cr,'stock_move_inventory_report')
         cr.execute("""
         create or replace view stock_move_inventory_report AS(select row_number() OVER (order by sm.write_date) as id,pp.name_template as name,
@@ -54,18 +54,18 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
         if not end_date:
             raise osv.except_osv(('Error'), ('Please choose a end date to show the graph'))
 
-        cr.execute("SELECT name,sum(CASE WHEN sm.location_dest_id = " + self._hospitalLocationId  + """ THEN 1*quantity
+        cr.execute("SELECT name,sum(CASE WHEN sm.location_dest_id = " + self._mainLocationId  + """ THEN 1*quantity
             ELSE -1*quantity
             END) as qty
             from stock_move_inventory_report sm
             where name = '""" + product +"""' and
-            (location_dest_id=""" + self._hospitalLocationId  + " or location_id=" + self._hospitalLocationId  + ") and date_order<'" + start_date + """'
+            (location_dest_id=""" + self._mainLocationId  + " or location_id=" + self._mainLocationId  + ") and date_order<'" + start_date + """'
             GROUP BY sm.name""")
         rows = cr.fetchall()
         startingQty=0;
         for row in rows:
             startingQty=row[1]
-        cr.execute("select product_min_qty,product_max_qty from stock_warehouse_orderpoint where product_id=(select id from product_product where name_template='" + product +"') and location_id=" + self._hospitalLocationId  + " limit 1")
+        cr.execute("select product_min_qty,product_max_qty from stock_warehouse_orderpoint where product_id=(select id from product_product where name_template='" + product +"') and location_id=" + self._mainLocationId  + " limit 1")
         rows = cr.fetchall()
         min=0
         max=0
@@ -73,12 +73,12 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
             min = row[0]
             max = row[1];
         cr.execute("select name,quantity,EXTRACT(EPOCH FROM date_trunc('second', date_order) AT TIME ZONE 'UTC')*1000 from stock_move_inventory_report where name='"+product+"' and date_order>'"+start_date+"' and date_order<'"+end_date+"'")
-        cr.execute("SELECT name,sum(CASE WHEN sm.location_dest_id = " + self._hospitalLocationId  + """ THEN 1*quantity
+        cr.execute("SELECT name,sum(CASE WHEN sm.location_dest_id = " + self._mainLocationId  + """ THEN 1*quantity
         ELSE -1*quantity
             END) as way,EXTRACT(EPOCH FROM date_trunc('second', date_order) AT TIME ZONE 'UTC')*1000
             from stock_move_inventory_report sm
             where name = '""" + product +"""' and
-            (location_dest_id=""" + self._hospitalLocationId  + " or location_id=" + self._hospitalLocationId  + ") and date_order>='" + start_date + "' and date_order<='" + end_date + """'
+            (location_dest_id=""" + self._mainLocationId  + " or location_id=" + self._mainLocationId  + ") and date_order>='" + start_date + "' and date_order<='" + end_date + """'
             GROUP BY sm.name,sm.date_order ORDER BY sm.date_order asc""")
         rows = cr.fetchall()
         dataset = []

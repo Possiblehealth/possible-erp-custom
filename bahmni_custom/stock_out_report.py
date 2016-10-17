@@ -20,13 +20,13 @@ class stock_out_report(osv.osv):
         'quantity':fields.float('Quantity',readonly=True),
         'id':fields.integer('Product ID',readonly=True),
             }
-    _hospitalLocationId=None
-    _stockTransferLocations=None
+    _mainLocationId=None
+    _externalLocationIds=None
     def init(self,cr):
-        cr.execute("SELECT value FROM custom_report_props WHERE name='hospitalLocationId'")
-        self._hospitalLocationId = cr.fetchall()[0][0]
-        cr.execute("select value from custom_report_props where name='stockTransferLocationIds'")
-        self._stockTransferLocations = cr.fetchall()[0][0]
+        cr.execute("SELECT value FROM custom_report_props WHERE name='mainLocationId'")
+        self._mainLocationId = cr.fetchall()[0][0]
+        cr.execute("select value from custom_report_props where name='externalLocationIds'")
+        self._externalLocationIds = cr.fetchall()[0][0]
 
         drop_view_if_exists(cr,'stock_out_report')
         cr.execute("""
@@ -78,28 +78,28 @@ GROUP BY sm.write_date,pp.name_template,pp.id,sm.location_dest_id,sm.location_id
         daybeforestr=datetime.strftime(daybefore,self._date_format)
         date_list = [a + timedelta(days=x) for x in range(0, delta.days)]
         timeProdQtyHash={}
-        cr.execute("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id in ({stockTransferLocations}) THEN -1*quantity
+        cr.execute("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id in ({externalLocationIds}) THEN -1*quantity
                 ELSE 1*quantity
                 END) as qty
                 from product_product pp
                 INNER JOIN product_template pt ON pp.id = pt.id AND pt.x_formulary IS TRUE
                 LEFT JOIN stock_out_report sm on sm.product_id= pp.id and
-                (location_dest_id in ({stockTransferLocations}) or location_id in ({stockTransferLocations})) and date_order<'{start_date}'
-                GROUP BY pp.name_template,pp.id""".format(start_date=start_date,stockTransferLocations=self._stockTransferLocations))
+                (location_dest_id in ({externalLocationIds}) or location_id in ({externalLocationIds})) and date_order<'{start_date}'
+                GROUP BY pp.name_template,pp.id""".format(start_date=start_date,externalLocationIds=self._externalLocationIds))
         rows = cr.fetchall()
         for row in rows:
             self.addNameToDictionary(timeProdQtyHash,daybeforestr,row[0],row[2])
 
-        cr.execute("""SELECT sm.product_id,sm.name,sum(CASE WHEN sm.location_dest_id in ({stockTransferLocations}) THEN -1*quantity
+        cr.execute("""SELECT sm.product_id,sm.name,sum(CASE WHEN sm.location_dest_id in ({externalLocationIds}) THEN -1*quantity
             ELSE 1*quantity
             END) as way,sm.date_order
             from stock_out_report sm
             INNER JOIN product_template pt ON sm.product_id = pt.id AND pt.x_formulary IS TRUE
             where
-            (location_dest_id in ({stockTransferLocations}) or location_id in ({stockTransferLocations}))
+            (location_dest_id in ({externalLocationIds}) or location_id in ({externalLocationIds}))
             and date_order>='{start_date}' and date_order<='{end_date}'
             GROUP BY sm.name,sm.date_order,sm.product_id
-            ORDER BY sm.date_order asc""".format(start_date=start_date,end_date=end_date,stockTransferLocations=self._stockTransferLocations))
+            ORDER BY sm.date_order asc""".format(start_date=start_date,end_date=end_date,externalLocationIds=self._externalLocationIds))
 
         rows = cr.fetchall()
 # fill hash of hash here

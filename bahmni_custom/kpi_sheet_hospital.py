@@ -18,23 +18,23 @@ class kpi_sheet_hospital(osv.osv):
         'quantity': fields.float('Quantity', readonly=True),
         'id': fields.integer('Product ID', readonly=True),
     }
-    _hospitalLocationId = None
-    _stockTransferLocations = None
+    _mainLocationId = None
+    _externalLocationIds = None
 
     def init(self, cr):
-        cr.execute("SELECT value FROM custom_report_props WHERE name='hospitalLocationId'")
-        self._hospitalLocationId = cr.fetchall()[0][0]
-        cr.execute("select value from custom_report_props where name='stockTransferLocationIds'")
-        self._stockTransferLocations = cr.fetchall()[0][0]
+        cr.execute("SELECT value FROM custom_report_props WHERE name='mainLocationId'")
+        self._mainLocationId = cr.fetchall()[0][0]
+        cr.execute("select value from custom_report_props where name='externalLocationIds'")
+        self._externalLocationIds = cr.fetchall()[0][0]
 
         drop_view_if_exists(cr, 'kpi_data_hospital')
         cr.execute(("""
         create or replace view kpi_data_hospital AS(select row_number() OVER (order by sm.write_date) as id,pp.name_template as name,
        pp.id as product_id,sm.product_qty as quantity,sm.write_date as date_order,
   sm.location_dest_id, sm.location_id,sm.prodlot_id,
-       CASE WHEN sm.location_dest_id in ({stockTransferLocations})
+       CASE WHEN sm.location_dest_id in ({externalLocationIds})
        THEN '-'
-       WHEN sm.location_id in ({stockTransferLocations})
+       WHEN sm.location_id in ({externalLocationIds})
        THEN '+'
        ELSE '*'
        END as way,
@@ -58,9 +58,9 @@ class kpi_sheet_hospital(osv.osv):
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id
-       and sm.state='done' AND (sm.location_dest_id in ({stockTransferLocations})
-                                or sm.location_id in ({stockTransferLocations}))
-  LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id=sm.product_id and swo.location_id ={hospitalLocationId}
+       and sm.state='done' AND (sm.location_dest_id in ({externalLocationIds})
+                                or sm.location_id in ({externalLocationIds}))
+  LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id=sm.product_id and swo.location_id ={mainLocationId}
   LEFT JOIN product_template pt on pt.id = pp.product_tmpl_id
   LEFT JOIN stock_production_lot spl on spl.id=sm.prodlot_id
   LEFT JOIN x_product_supplier_category xpsc on xpsc.id=spl.x_supplier_category
@@ -73,7 +73,7 @@ from
   LEFT JOIN stock_location srcloc on srcloc.id = sm.location_id
   LEFT JOIN res_partner rp on rp.id=pol.partner_id
 ORDER BY pp.id , date_order)
-        """).format(hospitalLocationId=self._hospitalLocationId, stockTransferLocations=self._stockTransferLocations))
+        """).format(mainLocationId=self._mainLocationId, externalLocationIds=self._externalLocationIds))
 
     def unlink(self, cr, uid, ids, context=None):
         raise osv.except_osv(_('Error!'), _('You cannot delete any record!'))
@@ -132,20 +132,20 @@ ORDER BY pp.id , date_order)
         daybeforestr = datetime.strftime(daybefore, self._date_format)
         date_list = [a + timedelta(days=x) for x in range(0, delta.days)]
         timeProdQtyHash = {}
-        cr.execute(("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id  in ({stockTransferLocations}) THEN -1*quantity
+        cr.execute(("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id  in ({externalLocationIds}) THEN -1*quantity
                     ELSE 1*quantity
                     END) as qty
                     from product_product pp
                     LEFT JOIN kpi_data_hospital sm on sm.product_id= pp.id and
-                    (location_dest_id in ({stockTransferLocations})
-                     or location_id in ({stockTransferLocations})) and date_order<'""" + start_date +
+                    (location_dest_id in ({externalLocationIds})
+                     or location_id in ({externalLocationIds})) and date_order<'""" + start_date +
                     """' GROUP BY pp.name_template,pp.id""").format(
-            stockTransferLocations=self._stockTransferLocations))
+            externalLocationIds=self._externalLocationIds))
 
         rows = cr.fetchall()
         for row in rows:
             timeProdQtyHash[row[0]] = row[2]
-        cr.execute(("""SELECT product_id,name,(CASE WHEN sm.location_dest_id in ({stockTransferLocations})
+        cr.execute(("""SELECT product_id,name,(CASE WHEN sm.location_dest_id in ({externalLocationIds})
             THEN -1*quantity
             ELSE 1*quantity
                 END) as qty,sm.date_order, sm.way,sm.itemreference,sm.x_low_cost_eq,sm.x_govt,sm.x_formulary,
@@ -155,10 +155,10 @@ ORDER BY pp.id , date_order)
                 sm.batch_number
                 from kpi_data_hospital sm
                 where
-                (location_dest_id in ({stockTransferLocations}) or location_id in ({stockTransferLocations}))
+                (location_dest_id in ({externalLocationIds}) or location_id in ({externalLocationIds}))
                 and date_order>='""" + start_date + "' and date_order<='" + end_date + "' "
                                                                                        "ORDER BY product_id,sm.date_order asc").format(
-            stockTransferLocations=self._stockTransferLocations))
+            externalLocationIds=self._externalLocationIds))
         out = []
         rows = cr.fetchall()
         # fill hash of hash here

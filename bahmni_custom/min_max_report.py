@@ -20,11 +20,11 @@ class min_max_report(osv.osv):
         'quantity':fields.float('Quantity',readonly=True),
         'id':fields.integer('Product ID',readonly=True),
     }
-    _hospitalLocationId = None
+    _mainLocationId = None
 
     def init(self,cr):
-        cr.execute("SELECT value FROM custom_report_props WHERE name='hospitalLocationId'")
-        self._hospitalLocationId = cr.fetchall()[0][0]
+        cr.execute("SELECT value FROM custom_report_props WHERE name='mainLocationId'")
+        self._mainLocationId = cr.fetchall()[0][0]
 
     def unlink(self, cr, uid, ids, context=None):
         raise osv.except_osv(_('Error!'), _('You cannot delete any record!'))
@@ -64,31 +64,31 @@ class min_max_report(osv.osv):
         daybeforestr=datetime.strftime(daybefore,self._date_format)
         date_list = [a + timedelta(days=x) for x in range(0, delta.days)]
         timeProdQtyHash={}
-        cr.execute("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id = {hospitalLocationId} THEN 1*quantity
+        cr.execute("""select pp.id,pp.name_template,sum(CASE WHEN sm.location_dest_id = {mainLocationId} THEN 1*quantity
                 ELSE -1*quantity
                 END) as qty
                 from product_product pp
                 LEFT JOIN stock_out_report sm on sm.product_id= pp.id and
-                (location_dest_id={hospitalLocationId} or location_id={hospitalLocationId}) and date_order<'{start_date}'
-                GROUP BY pp.name_template,pp.id""".format(hospitalLocationId=self._hospitalLocationId,start_date=start_date))
+                (location_dest_id={mainLocationId} or location_id={mainLocationId}) and date_order<'{start_date}'
+                GROUP BY pp.name_template,pp.id""".format(mainLocationId=self._mainLocationId,start_date=start_date))
         rows = cr.fetchall()
         for row in rows:
             self.addNameToDictionary(timeProdQtyHash,daybeforestr,row[0],row[2])
-        cr.execute("""SELECT product_id,name,sum(CASE WHEN sm.location_dest_id = {hospitalLocationId} THEN 1*quantity
+        cr.execute("""SELECT product_id,name,sum(CASE WHEN sm.location_dest_id = {mainLocationId} THEN 1*quantity
         ELSE -1*quantity
             END) as way,sm.date_order
             from stock_out_report sm
             where
-            (location_dest_id= {hospitalLocationId} or location_id= {hospitalLocationId}) and date_order>='{start_date}' and date_order<='{end_date}'
+            (location_dest_id= {mainLocationId} or location_id= {mainLocationId}) and date_order>='{start_date}' and date_order<='{end_date}'
             GROUP BY sm.name,sm.date_order,sm.product_id ORDER BY sm.date_order asc"""
-                   .format(hospitalLocationId=self._hospitalLocationId,start_date=start_date,end_date=end_date))
+                   .format(mainLocationId=self._mainLocationId,start_date=start_date,end_date=end_date))
 
         rows = cr.fetchall()
         for row in rows:
             self.addNameToDictionary(timeProdQtyHash,row[3],row[0],row[2])
         self.normalizeDict(timeProdQtyHash,date_list,daybeforestr)
         cr.execute("""select pp.id,pp.name_template,product_min_qty,product_max_qty  from product_product pp
-        LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id= pp.id and location_id="""+self._hospitalLocationId)
+        LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id= pp.id and location_id="""+self._mainLocationId)
         order_points = {}
         rows = cr.fetchall()
         for row in rows:
