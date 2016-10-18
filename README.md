@@ -16,7 +16,7 @@ Run the below query.
 
 If it gives NO run the below command, otherwise skip this part
 
-* INSERT INTO custom_report_props (name,value) VALUES ('mainLocationId',(SELECT id from stock_location WHERE name in ('mainLocationName')));
+* INSERT INTO custom_report_props (name,value) VALUES ('mainLocationId',(SELECT id from stock_location WHERE name = 'mainLocationName'));
 * # Remember to change the mainLocationName.
 * # Ex: 'BPH Storeroom'.
 
@@ -28,7 +28,7 @@ If it gives NO run the below command, otherwise skip this part
 
 * INSERT INTO custom_report_props (name,value) VALUES ('externalLocationIds',(SELECT id from stock_location WHERE name in (listOfExternalLocations)));
 * # Remember to change the listOfExternalLocations.
-* # Ex: 'Scrap','Expired','Customers'.
+* # Ex: 'Scrapped','Customers','Suppliers','BPH Scrap','BPH Expired','Inventory loss'.
 
 # possible-erp-custom
 How to depoy?
