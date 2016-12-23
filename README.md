@@ -26,7 +26,7 @@ Run the below query.
 
 If it gives NO run the below command, otherwise skip this part
 
-* INSERT INTO custom_report_props (name,value) VALUES ('externalLocationIds',(SELECT id from stock_location WHERE name in (listOfExternalLocations)));
+* INSERT INTO custom_report_props (name,value) VALUES ('externalLocationIds', (SELECT string_agg(cast (id as TEXT),',') FROM stock_location WHERE name IN (listOfExternalLocations)));
 * # Remember to change the listOfExternalLocations.
 * # Ex: 'Scrapped','Customers','Suppliers','BPH Scrap','BPH Expired','Inventory loss'.
 
