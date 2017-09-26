@@ -46,7 +46,8 @@ class kpi_sheet_report(osv.osv):
   pol.price_unit as purchase_price,at.amount as ptax,
   (pol.price_unit+(pol.price_unit*coalesce(at.amount,0))) as amtwithtax,
   spl.sale_price as lot_sp,
-  spl.name as batch_number
+  spl.name as batch_number,
+  pp.physic_medicine,pp.insurance_medicine,pp.vertical_program,pp.dental_item
 from
   stock_move sm inner join product_product pp
     on sm.product_id=pp.id
@@ -54,12 +55,12 @@ from
     LEFT JOIN stock_warehouse_orderpoint swo on swo.product_id=sm.product_id and swo.location_id = {location_id}
     LEFT JOIN product_template pt on pt.id = pp.product_tmpl_id
     LEFT JOIN stock_production_lot spl on spl.id=sm.prodlot_id
-    LEFT JOIN x_product_supplier_category xpsc on xpsc.id=spl.x_supplier_category
     LEFT JOIN product_category pc on pt.categ_id= pc.id
   LEFT JOIN purchase_order_line pol on pol.id=sm.purchase_line_id
   LEFT JOIN purchase_order_taxe pot on pot.ord_id = pol.id
   LEFT JOIN account_tax at on at.id = pot.tax_id
   LEFT JOIN res_partner rp on rp.id=pol.partner_id
+  LEFT JOIN x_product_supplier_category xpsc on xpsc.id=rp.x_supplier_category
   LEFT JOIN purchase_order po on pol.order_id = po.id
   LEFT JOIN stock_location dstloc on dstloc.id = sm.location_dest_id
   LEFT JOIN stock_location srcloc on srcloc.id = sm.location_id
@@ -100,6 +101,10 @@ ORDER BY pp.id , date_order)
         header.append("Lab Item")
         header.append("Medical Item")
         header.append("Other Item")
+        header.append("Physic Medicine")
+        header.append("Insurance Medicine")
+        header.append("Vertical Program")
+        header.append("Dental Item")
         header.append("Running total")
         header.append("Hit/Mis")
         header.append("Stockout duration")
@@ -137,7 +142,7 @@ ORDER BY pp.id , date_order)
             END) as qty,sm.date_order, sm.way,sm.itemreference,sm.x_low_cost_eq,sm.x_govt,sm.x_formulary,
             sm.product_min_qty,sm.product_max_qty,sm.product_category,sm.supplier_category,sm.supplier,
             sm.antibiotic,sm.lab_item,sm.medical_item,sm.other_item,sm.list_price,sm.fromloc,sm.toloc,sm.purchase_price,
-            sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname,sm.lot_sp,sm.batch_number
+            sm.x_bare_minimum,sm.amtwithtax,sm.medicine_item,poname,sm.lot_sp,sm.batch_number,sm.physic_medicine,sm.insurance_medicine,sm.vertical_program,sm.dental_item
             from """+view_name+""" sm
             where
             (location_dest_id="""+str(productsIds[0])+" or location_id="+str(productsIds[0])+") and date_order>='"+start_date+"' and date_order<='"+end_date+"""'
@@ -183,6 +188,10 @@ ORDER BY pp.id , date_order)
             line.append(row[15])
             line.append(row[16])
             line.append(row[17])
+            line.append(row[28])
+            line.append(row[29])
+            line.append(row[30])
+            line.append(row[31])
             if last_prod_id != prodID :
                 if prodID not in timeProdQtyHash:
                     timeProdQtyHash[prodID]=0.0

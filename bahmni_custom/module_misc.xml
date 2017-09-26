@@ -57,6 +57,28 @@
                         <label for="lab_item"/>
                     </h4>
                 </xpath>
+                <xpath expr="//field[@name='lab_item']/.." position="after">
+                    <h4><field name="physic_medicine"/>
+                        <label for="physic_medicine"/>
+                    </h4>
+                </xpath>
+                <xpath expr="//field[@name='physic_medicine']/.." position="after">
+                    <h4><field name="insurance_medicine"/>
+                        <label for="insurance_medicine"/>
+                    </h4>
+                </xpath>
+                <xpath expr="//field[@name='insurance_medicine']/.." position="after">
+                    <h4><field name="vertical_program"/>
+                        <label for="vertical_program"/>
+                    </h4>
+                </xpath>
+                <xpath expr="//field[@name='vertical_program']/.." position="after">
+                    <h4><field name="dental_item"/>
+                        <label for="dental_item"/>
+                    </h4>
+                </xpath>
+
+
                 <xpath expr="//field[@name='categ_id']/.." position="after">
                     <h4><field name="antibiotic"/>
                         <label for="antibiotic"/>
@@ -181,6 +203,21 @@
                     </xpath>
                 </field>
             </record>
+
+ 	<!--Add Supplier category for Supplier-->
+	
+            <record model="ir.ui.view" id="view_supplier_supplier_category_form">
+                <field name="name">res.partner.form</field>
+                <field name="model">res.partner</field>
+                <field name="inherit_id" ref="base.view_partner_form" />
+                <field name="arch" type="xml">
+                    <xpath expr="//field[@name='supplier']" position="after">
+                        <field name="x_supplier_category" attrs="{'invisible':[('supplier','!=',True)]}"/>
+                    </xpath>
+                </field>
+            </record>
+
+
 
     </data>
 </openerp>

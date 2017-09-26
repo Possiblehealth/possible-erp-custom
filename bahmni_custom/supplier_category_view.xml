@@ -48,7 +48,7 @@
 
         <menuitem action="action_supplier_category_mapping"
                   id="menu_action_supplier_category_mapping"
-                  parent="base.menu_base_config" groups="base.group_system"
+                  parent="purchase.menu_purchase_config_purchase" groups="base.group_system"
                   sequence="10"/>
 
     </data>

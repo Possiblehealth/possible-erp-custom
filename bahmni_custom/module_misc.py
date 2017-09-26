@@ -99,14 +99,22 @@ class product_product(osv.osv):
         'lab_item':fields.boolean('Lab Item'),
         'medical_item':fields.boolean('Medical Item'),
         'other_item':fields.boolean('Other Item'),
-        'medicine_item':fields.boolean('Medicine')
+        'medicine_item':fields.boolean('Medicine'),
+        'physic_medicine':fields.boolean('Physic Medicine'),
+        'insurance_medicine':fields.boolean('Insurance Medicine'),
+        'dental_item':fields.boolean('Dental Item'),
+        'vertical_program':fields.boolean('Vertical Program')
         }
     _default={
         'antibiotic':False,
         'lab_item':False,
         'medical_item':False,
         'other_item':False,
-        'medicine_item':False
+        'medicine_item':False,
+        'physic_medicine':False,
+        'insurance_medicine':False,
+        'dental_item':False,
+        'vertical_program':False
     }
 product_product()
 
@@ -118,12 +126,11 @@ class stock_move(osv.osv):
     def _get_suppliercat_id(self, cr, uid, ids, name, args, context=None):
         res = {}
         for stock_move in self.browse(cr, uid, ids):
-            supplier_obj=self.pool.get("stock.production.lot")
-            suppliercat=supplier_obj.browse(cr,uid,stock_move.prodlot_id.id)
-            x_prod_supcat_cnt = self.pool.get("x_product_supplier_category").search(cr,uid,[('id' , '=', suppliercat.id)])
-            if len(x_prod_supcat_cnt) > 0:
-                x_prod_supcat = self.pool.get("x_product_supplier_category").browse(cr,uid,suppliercat.id)
-                res[stock_move.id] = x_prod_supcat.x_name
+            supplier_obj=self.pool.get("res.partner")
+            partnerid = supplier_obj.browse(cr,uid,stock_move.partner_id.id)
+            suppliercat = partnerid.x_supplier_category
+            if suppliercat:
+                res[stock_move.id] = suppliercat.x_name
             else:
                 res[stock_move.id] = ""
         return res
@@ -201,3 +208,14 @@ class stock_production_lot(osv.osv):
 
 
 stock_production_lot()
+
+class res_partner(osv.osv):
+    _name = 'res.partner'
+    _inherit = 'res.partner'
+
+    _columns = {
+        'x_supplier_category':fields.many2one('x.product.supplier.category',string ='Supplier Category')
+    }
+
+
+res_partner()

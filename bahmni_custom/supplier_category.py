@@ -21,3 +21,16 @@ class supplier_category(osv.osv):
 
 
 supplier_category()
+
+
+class stock_production_lot(osv.osv):
+
+    _name = 'stock.production.lot'
+    _inherit = 'stock.production.lot'
+
+    _columns = {
+        'x_supplier_category':fields.many2one('x.product.supplier.category',required='True',string ='Supplier Category')
+    }
+
+
+stock_production_lot()
