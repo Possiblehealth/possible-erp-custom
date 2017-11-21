@@ -1,0 +1,73 @@
+<?xml version="1.0" ?>
+<openerp>
+    <data>
+
+        <!-- adds fields expired to production lot form-->
+
+        <record model="ir.ui.view" id="view_move_form">
+            <field name="name">stock.production.lot.form.inherit3</field>
+            <field name="model">stock.production.lot</field>
+            <field name="inherit_id" ref="stock.view_production_lot_form" />
+            <field name="type">form</field>
+            <field name="arch" type="xml">
+                <field name="date" position="after">
+                    <field name="expired" readonly="1"/>
+                </field>
+                <field name="expired" position="after">
+                    <field name="expire_30" readonly="1"/>
+                </field>
+                <field name="expire_30" position="after">
+                    <field name="expire_30_60" readonly="1"/>
+                </field>
+                <field name="expire_30_60" position="after">
+                    <field name="expire_60_90" readonly="1"/>
+                </field>
+            </field>
+        </record>
+
+        <!-- adds fields expired to prodlots tree view-->
+
+        <record id="view_production_lot_tree" model="ir.ui.view">
+            <field name="name">stock.production.lot.tree.inherit2</field>
+            <field name="model">stock.production.lot</field>
+            <field name="type">tree</field>
+            <field name="inherit_id" ref="stock.view_production_lot_tree"/>
+            <field name="arch" type="xml">
+                <field name="date" position="after">
+                    <field name="expired"/>
+                </field>
+                <field name="expired" position="after">
+                    <field name="expire_30" />
+                </field>
+                <field name="expire_30" position="after">
+                    <field name="expire_30_60" />
+                </field>
+                <field name="expire_30_60" position="after">
+                    <field name="expire_60_90"/>
+                </field>
+            </field>
+        </record>
+
+        <record model="ir.ui.view" id="search_product_lot_filter_add_expired">
+            <field name="name">Production Lots Filter add expired</field>
+            <field name="model">stock.production.lot</field>
+            <field name="inherit_id" ref="stock.search_product_lot_filter"/>
+            <field name="type">search</field>
+            <field name="arch" type="xml">
+                <filter name="available" position="after">
+                    <filter icon="gtk-dialog-error" name="expired" string="Expired" domain="[('expired', '=', True)]" help="Production lots expired"/>
+                </filter>
+                <filter name="expired" position="after">
+                    <filter icon="gtk-dialog-error" name="expire_30" string="Expiring in 30 days" domain="[('expire_30', '=', True)]" help="Production lots expiring in 30 days"/>
+                </filter>
+                <filter name="expire_30" position="after">
+                    <filter icon="gtk-dialog-error" name="expire_30_60" string="Expiring in 30 to 60 days" domain="[('expire_30_60', '=', True)]" help="Production lots expiring in 30 to 60 days"/>
+                </filter>
+                <filter name="expire_30_60" position="after">
+                    <filter icon="gtk-dialog-error" name="expire_60_90" string="Expiring in 60 to 90 days" domain="[('expire_60_90', '=', True)]" help="Production lots expiring in 60 to 90 days"/>
+                </filter>
+            </field>
+        </record>
+
+    </data>
+</openerp>
