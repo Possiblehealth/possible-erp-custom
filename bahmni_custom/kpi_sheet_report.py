@@ -45,7 +45,7 @@ class kpi_sheet_report(osv.osv):
   rp.name as supplier,
   pol.price_unit as purchase_price,at.amount as ptax,
   (pol.price_unit+(pol.price_unit*coalesce(at.amount,0))) as amtwithtax,
-  spl.sale_price as lot_sp,
+  sol.price_unit as lot_sp,
   spl.name as batch_number,
   pp.physic_medicine,pp.insurance_medicine,pp.vertical_program,pp.dental_item
 from
@@ -56,6 +56,7 @@ from
     LEFT JOIN product_template pt on pt.id = pp.product_tmpl_id
     LEFT JOIN stock_production_lot spl on spl.id=sm.prodlot_id
     LEFT JOIN product_category pc on pt.categ_id= pc.id
+    LEFT JOIN sale_order_line sol on sol.id=sm.sale_line_id
   LEFT JOIN purchase_order_line pol on pol.id=sm.purchase_line_id
   LEFT JOIN purchase_order_taxe pot on pot.ord_id = pol.id
   LEFT JOIN account_tax at on at.id = pot.tax_id
