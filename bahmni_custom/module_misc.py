@@ -103,7 +103,11 @@ class product_product(osv.osv):
         'physic_medicine':fields.boolean('Physic Medicine'),
         'insurance_medicine':fields.boolean('Insurance Medicine'),
         'dental_item':fields.boolean('Dental Item'),
-        'vertical_program':fields.boolean('Vertical Program')
+        'vertical_program':fields.boolean('Vertical Program'),
+        'ch':fields.boolean('CH'),
+        'bh':fields.boolean('BH'),
+        'org':fields.boolean('Org'),
+        'orphan_drug':fields.boolean('Orphan Drug')
         }
     _default={
         'antibiotic':False,
@@ -114,7 +118,11 @@ class product_product(osv.osv):
         'physic_medicine':False,
         'insurance_medicine':False,
         'dental_item':False,
-        'vertical_program':False
+        'vertical_program':False,
+        'ch':False,
+        'bh':False,
+        'org':False,
+        'orphan_drug':False
     }
 product_product()
 

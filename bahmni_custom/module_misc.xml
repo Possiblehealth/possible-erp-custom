@@ -104,6 +104,26 @@
                         <label for="x_low_cost_eq"/>
                     </h4>
                 </xpath>
+                <xpath expr="//field[@name='categ_id']/.." position="after">
+                    <h4><field name="ch"/>
+                        <label for="ch"/>
+                    </h4>
+                </xpath>
+                <xpath expr="//field[@name='categ_id']/.." position="after">
+                    <h4><field name="bh"/>
+                        <label for="bh"/>
+                    </h4>
+                </xpath>
+                <xpath expr="//field[@name='categ_id']/.." position="after">
+                    <h4><field name="org"/>
+                        <label for="org"/>
+                    </h4>
+                </xpath>
+                <xpath expr="//field[@name='categ_id']/.." position="after">
+                    <h4><field name="orphan_drug"/>
+                        <label for="orphan_drug"/>
+                    </h4>
+                </xpath>
             </field>
         </record>
 
