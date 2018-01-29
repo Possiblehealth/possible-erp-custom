@@ -45,7 +45,7 @@ class kpi_sheet_report(osv.osv):
   rp.name as supplier,
   pol.price_unit as purchase_price,at.amount as ptax,
   (pol.price_unit+(pol.price_unit*coalesce(at.amount,0))) as amtwithtax,
-  sol.price_unit as lot_sp,
+  spl.sale_price as lot_sp,
   spl.name as batch_number,
   pp.physic_medicine,pp.insurance_medicine,pp.vertical_program,pp.dental_item
 from
