@@ -211,19 +211,6 @@
             </field>
         </record>
 
-        <!--Add Customer category for Batch Number-->
-
-            <record model="ir.ui.view" id="view_move_form_expiry">
-                <field name="name">stock.production.lot.form</field>
-                <field name="model">stock.production.lot</field>
-                <field name="inherit_id" ref="stock.view_production_lot_form" />
-                <field name="arch" type="xml">
-                    <xpath expr="//field[@name='prefix']" position="after">
-                        <field name="x_supplier_category" />
-                    </xpath>
-                </field>
-            </record>
-
  	<!--Add Supplier category for Supplier-->
 	
             <record model="ir.ui.view" id="view_supplier_supplier_category_form">
@@ -232,7 +219,7 @@
                 <field name="inherit_id" ref="base.view_partner_form" />
                 <field name="arch" type="xml">
                     <xpath expr="//field[@name='supplier']" position="after">
-                        <field name="x_supplier_category" attrs="{'invisible':[('supplier','!=',True)]}"/>
+                        <field name="x_supplier_category" attrs="{'invisible':[('supplier','=', False)]}"/>
                     </xpath>
                 </field>
             </record>

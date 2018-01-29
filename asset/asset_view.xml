@@ -63,6 +63,7 @@
                                         <field name="asset_number"/>
                                         <field name="model"/>
                                         <field name="serial"/>
+                                        <field name="purchase_amount"/>
                                     </group>
                                     <group>
                                     </group>

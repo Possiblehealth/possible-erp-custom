@@ -3,3 +3,4 @@
 
 
 import stock_move_report
+import product_product

@@ -150,6 +150,7 @@ class asset_asset(osv.osv):
         'manufacturer_id': fields.many2one('res.partner', 'Manufacturer'),
         'start_date': fields.date('Start Date'),
         'purchase_date': fields.date('Purchase Date'),
+        'purchase_amount': fields.float(string='Purchase Amount'),
         'warranty_start_date': fields.date('Warranty Start'),
         'warranty_end_date': fields.date('Warranty End'),
         # image: all image fields are base64 encoded and PIL-supported

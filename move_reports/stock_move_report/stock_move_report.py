@@ -3,19 +3,37 @@
 
 from openerp.osv import osv, fields
 import openerp.addons.decimal_precision as dp
+
 import time
 from datetime import datetime
+import csv
 import pytz
 import os,glob
-import csv,xlwt
-from xlsxwriter.workbook import Workbook
 import shutil 
 import base64
 from tools.translate import _
-from pathlib import Path
-import logging
 from pprint import pprint
+
+import logging
 _logger = logging.getLogger(__name__)
+
+try:
+    import xlwt
+except ImportError:
+    _logger.warning("Python module xlwt not found!\n"
+                    "Please install module using: sudo pip install xlwt.")
+
+try:
+    from xlsxwriter.workbook import Workbook
+except ImportError:
+    _logger.warning("Python module xlsxwriter not found!\n"
+                    "Please install module using: sudo pip install xlsxwriter.")
+    
+try:
+    from pathlib import Path
+except ImportError:
+    _logger.warning("Python module pathlib module not found!\n"
+                    "Please install module using: sudo pip install pathlib.")
 
 import sys
 import zipfile
@@ -231,9 +249,9 @@ class stock_move_report(osv.osv):
                     WHERE  %s 
                     ORDER BY m.id;
                     """#uid,uid,domain
-    _in_header = " date, origin, invoice_name, picking_name, type, pick_return, partner_ref, partner_name, partner_category, stock_type_name, category_name, product_sku, product_id, product_name, move_qty, product_qty, uom_name, product_uom_name, product_price, po_price, amount_total, loc_name, loc_dest_name, return_reason"
-    _out_header = " date, origin, invoice_name, picking_name, type, pick_return, partner_ref, partner_name, partner_category, stock_type_name, category_name, product_sku, product_id, product_name, move_qty, product_qty, uom_name, product_uom_name, uom_factor, product_price, price_unit, cost_total, loc_name, loc_dest_name, return_reason"
-    _read_header = " date, origin, invoice_name, picking_name, type, pick_return, partner_ref, partner_name, partner_category, stock_type_name, category_name, product_sku, product_id, product_name, move_qty, product_qty, uom_name, product_uom_name, uom_factor, product_price, price_unit, cost_total, loc_name, loc_dest_name, return_reason"
+    _in_header = " date, origin, invoice_name, picking_name, type, pick_return, partner_ref, partner_name, partner_category, stock_type_name, category_id, category_name, product_sku, product_id, product_name, move_qty, product_qty, uom_name, product_uom_name, product_price, po_price, amount_total, loc_name, loc_dest_name, return_reason"
+    _out_header = " date, origin, invoice_name, picking_name, type, pick_return, partner_ref, partner_name, partner_category, stock_type_name, category_id, category_name, product_sku, product_id, product_name, move_qty, product_qty, uom_name, product_uom_name, uom_factor, product_price, price_unit, cost_total, loc_name, loc_dest_name, return_reason"
+    _read_header = " date, origin, invoice_name, picking_name, type, pick_return, partner_ref, partner_name, partner_category, stock_type_name, category_id, category_name, product_sku, product_id, product_name, move_qty, product_qty, uom_name, product_uom_name, uom_factor, product_price, price_unit, cost_total, loc_name, loc_dest_name, return_reason"
     _read_sql = """
         SELECT %s FROM stock_move_report;
         """
@@ -337,7 +355,10 @@ class stock_move_report(osv.osv):
         if uid != 1:
             partner_ids.append(1)
         
-        tz = pytz.timezone(context.get('tz','Asia/Kolkata'))
+        tmzone = context.get('tz') or 'Asia/Kolkata'
+        tz = pytz.timezone(tmzone)
+#         tz = pytz.timezone(context.get('tz','Asia/Kolkata'))
+# context.get('tz', 'Asia/Kolkata'), won't return Asia/Kolkata when in context tz is set to False
         tznow = pytz.utc.localize(datetime.now()).astimezone(tz).strftime('%Y-%m-%d %H:%M:%S')
         message_id = mess_pool.create(cr, uid, {
                 'type': 'notification',
@@ -357,22 +378,22 @@ class stock_move_report(osv.osv):
         'move_id':          fields.many2one('stock.move', 'Stock Move', required=True),
         'date_expected':    fields.datetime('Date Expected'),
         'date':             fields.datetime('Date'),
-        'origin':           fields.char('Origin', size=32),
+        'origin':           fields.char('Origin', size=64),
         'invoice_name':     fields.char('Invoice Name', size=64),
         'picking_id':       fields.many2one('stock.picking', 'Stock Picking'),
         'picking_name':     fields.char('Picking Name', size=64),
         'type':             fields.char('Type', size=16),
         'pick_return':      fields.char('Return', size=16),
         'return_reason':    fields.char('Return Reason', size=16),
-        'partner_ref':      fields.char('Partner Ref', size=16),
+        'partner_ref':      fields.char('Partner Ref', size=64),
         'partner_name':     fields.char('Partner Name', size=128),
         'partner_id':       fields.many2one('res.partner', 'Partner'),
         'partner_category': fields.char('Supplier Category', size=128),
         'stock_type_id':    fields.many2one('product.stock_type',string='Stock Type'),
         'stock_type_name':  fields.char('Stock Type Name', size=128),
         'category_id':      fields.many2one('product.category',string='Category'),
-        'category_name':    fields.char('Category Name', size=128),
-        'product_sku':      fields.char('SKU', size=16),
+        'category_name':    fields.text('Category Name', size=128),
+        'product_sku':      fields.char('SKU', size=128),
         'product_name':     fields.char('Product Name', size=1024),
         'product_id':       fields.many2one('product.product', 'Product'),
         'move_qty':         fields.float("Move Quantity", digits_compute=dp.get_precision('Product Unit of Measure')),
@@ -381,7 +402,7 @@ class stock_move_report(osv.osv):
         'uom_factor':       fields.float('Uom Ratio' ,digits=(12, 12),
                                     help='How much bigger or smaller this unit is compared to the reference Unit of Measure for this category:\n'\
                                         '1 * (reference unit) = ratio * (this unit)'),
-        'uom_name':         fields.char('UoM Name', size=32),
+        'uom_name':         fields.char('UoM Name', size=64),
         'product_uom_name': fields.char('Product UoM', size=32),
         'loc_name':         fields.char('Source Location Name', size=256),
         'loc_dest_name':    fields.char('Dest Location Name', size=256),
@@ -430,6 +451,7 @@ class stock_move_report(osv.osv):
 
         #TODO
         header, content = self._get_table_data(cr, uid, type, context)
+        header = [x.strip() for x in header]    #removing spaces from header tags
         
         csv_file = '/tmp/stock.move.report.csv'
         with open(csv_file, "wb") as f:
@@ -464,22 +486,23 @@ class stock_move_report(osv.osv):
         wsu = w.add_worksheet('Summary Report')
         
         reader = csv.DictReader(open(csv_file))
-
+        
         # Code for Summary sheet
         result = {}
         duplicate = {}
+        product_visited = []
+        injection_lines = []
         for row in reader:
-
-            key = row.pop(' category_name')
-            opening_location = row.pop(' loc_dest_name')
-            partner_category = row.pop(' partner_category')
-            invoice_name = row.pop(' invoice_name')
-            pick_type = row.pop(' type')
-            amount = row.pop(' cost_total')
-            loc_name = row.pop(' loc_name')
-            product_id = row.pop(' product_id')
+            key = row.pop('category_name') if row.get('category_name') else ''
+            opening_location = row.pop('loc_dest_name') if row.get('loc_dest_name') else ''
+            partner_category = row.pop('partner_category') if row.get('partner_category') else ''
+            invoice_name = row.pop('invoice_name') if row.get('invoice_name') else ''
+            pick_type = row.pop('type') if row.get('type') else ''
+            amount = row.pop('cost_total') if row.get('cost_total') else 0.0
+            loc_name = row.pop('loc_name') if row.get('loc_name') else 0.0
+            product_id = int(row.pop('product_id')) if row.get('product_id') else False
+            category_id = int(row.pop('category_id')) if row.get('category_id') else False
             
-
             # Get quantity of product available on a particular day
             if not key:
                 continue
@@ -487,45 +510,40 @@ class stock_move_report(osv.osv):
             # Create Hash of Hashes
             if key not in result:
                 result[key] = {}
-
-            if product_id not in duplicate:
-                if 'opening_stock' not in result[key]:
-                    result[key]['opening_stock'] = 0.00
-                if 'closing_stock' not in result[key]:
-                    result[key]['closing_stock'] = 0.00
-                if 'opening_pharmacy' not in result[key]:
-                    result[key]['opening_pharmacy'] = 0.00
-                if 'closing_pharmacy' not in result[key]:
-                    result[key]['closing_pharmacy'] = 0.00
-
-                pp_obj = self.pool['product.product']
                 ctx = context.copy()
-                ctx['from_date'] = context['start_date']
-                ctx['location'] = 'Stock'
-                pp_res = pp_obj.get_product_available(cr, uid, [product_id], context=ctx)
-                result[key]['opening_stock'] += pp_res[product_id]
+#                 ctx['from_date'] = context['start_date']
+                ctx['to_date'] = context['start_date']
+                ctx['location'] = 'Storeroom'
+                if context.get('type') == 'all':
+                    ctx['what'] = ('in', 'out')
+                pp_obj = self.pool['product.product']
+                product_ids = pp_obj.search(cr, uid, [('categ_id', '=', category_id)])
+                category_opening_balance_store = pp_obj.get_product_available_category_wise(cr, uid, product_ids, category_id, context=ctx)
+                result[key]['opening_stock'] = category_opening_balance_store[category_id]
                 ctx['location'] = 'Pharmacy'
-                pp_res = pp_obj.get_product_available(cr, uid, [product_id], context=ctx)
-                result[key]['opening_pharmacy'] += pp_res[product_id]
+                category_opening_balance_pharmacy = pp_obj.get_product_available_category_wise(cr, uid, product_ids, category_id, context=ctx)
+                result[key]['opening_pharmacy'] = category_opening_balance_pharmacy[category_id]
                 ctx['to_date'] = context['end_date']
-                ctx['location'] = 'Stock'
-                pp_res = pp_obj.get_product_available(cr, uid, [product_id], context=ctx)
-                result[key]['closing_stock'] += pp_res[product_id]
+                ctx['location'] = 'Storeroom'
+                category_closing_balance_store = pp_obj.get_product_available_category_wise(cr, uid, product_ids, category_id, context=ctx)
+                result[key]['closing_stock'] = category_opening_balance_pharmacy[category_id]
                 ctx['location'] = 'Pharmacy'
-                pp_res = pp_obj.get_product_available(cr, uid, [product_id], context=ctx)
-                result[key]['closing_pharmacy'] += pp_res[product_id]
-
-
+                category_closing_balance_pharmacy = pp_obj.get_product_available_category_wise(cr, uid, product_ids, category_id, context=ctx)
+                result[key]['closing_pharmacy'] = category_opening_balance_pharmacy[category_id]
+                
             if(pick_type == 'in'):
-                if(partner_category):
-                    if 'additions' not in result[key]:
-                        result[key]['additions'] = {}
+                
+                if 'additions' not in result[key]:
+                    result[key]['additions'] = {}
+                if not partner_category:
+                    partner_category = 'Undefined'
+                if partner_category:
                     if partner_category not in result[key]['additions']:
                         result[key]['additions'][partner_category] = {}
 
                     if not invoice_name:
                         continue
-
+                    
                     if invoice_name not in result[key]['additions'][partner_category]:
                         result[key]['additions'][partner_category][invoice_name] = {}
                         result[key]['additions'][partner_category][invoice_name]['amount'] = 0.00 
@@ -544,10 +562,17 @@ class stock_move_report(osv.osv):
                     amount = 0.00
                 
                 result[key]["usage"][loc_name]['amount'] += float(amount)
-
+        
         # Add content to workbook
         bold = w.add_format({'bold': True})
-
+        left = w.add_format({'align': 'left'})
+        left_bold = w.add_format({'bold': True,
+                                  'align': 'left',
+                                  'valign': 'vcenter',
+                                  'fg_color': '#FCD5B5'})
+        category_name = w.add_format({'align': 'left',
+                                      'valign': 'vcenter',
+                                      'fg_color': '#D9D9D9'})
         wsu.set_column('A:A', 5)
 
         merge_format_header = w.add_format({
@@ -560,11 +585,13 @@ class stock_move_report(osv.osv):
 
         wsu.write('D4', "Date", bold)
         wsu.write('E4', time.strftime("%d/%m/%Y"))
+        
+        format_amount = w.add_format({'align': 'right'})
 
         # Create a format for opening balance.
         merge_format_opening = w.add_format({
             'bold': 1,
-            'align': 'center',
+            'align': 'right',
             'valign': 'vcenter',
             'fg_color': '#FCD5B5'})
 
@@ -572,7 +599,7 @@ class stock_move_report(osv.osv):
 
         merge_format_additions = w.add_format({
             'bold': 1,
-            'align': 'center',
+            'align': 'right',
             'valign': 'vcenter',
             'fg_color': '#D9D9D9'})
 
@@ -581,19 +608,19 @@ class stock_move_report(osv.osv):
         
         merge_format_additions_total = w.add_format({
             'bold': 1,
-            'align': 'center',
+            'align': 'right',
             'valign': 'vcenter',
             'fg_color': '#E6E0EC'})
 
         merge_format_usage_total = w.add_format({
             'bold': 1,
-            'align': 'center',
+            'align': 'right',
             'valign': 'vcenter',
             'fg_color': '#B9CDE5'})
 
         merge_format_usage = w.add_format({
             'bold': 1,
-            'align': 'center',
+            'align': 'right',
             'valign': 'vcenter',
             'fg_color': '#B7DEE8'})
 
@@ -601,7 +628,7 @@ class stock_move_report(osv.osv):
 
         merge_format_closing = w.add_format({
             'bold': 1,
-            'align': 'center',
+            'align': 'right',
             'valign': 'vcenter',
             'fg_color': '#B3B1A9'})
 
@@ -614,9 +641,6 @@ class stock_move_report(osv.osv):
 
         row_counter = 6
         col_counter = 3
-       
-        total_additions = 0.00
-        total_usage = 0.00
 
         for key in result:
             #Create counters
@@ -630,24 +654,31 @@ class stock_move_report(osv.osv):
 
             opening_counter += 1
             closing_counter += 1
+            
+            total_additions = 0.00
+            total_usage = 0.00
 
             # Opening Balances
-            wsu.write(opening_counter, col_counter, "Stock", merge_format_opening)
-            wsu.write(opening_counter, col_counter+1, result[key]['opening_stock'], bold)
+            wsu.write(opening_counter, col_counter, "Stock", left)
+            wsu.write(opening_counter, col_counter+1,
+                      result[key]['opening_stock'] if result[key].get('opening_stock') else 0.0,
+                      format_amount)
             opening_counter += 1
-            wsu.write(opening_counter, col_counter, "Pharmacy", merge_format_opening)
-            wsu.write(opening_counter, col_counter+1, result[key]['opening_pharmacy'], bold)
+            wsu.write(opening_counter, col_counter, "Pharmacy", left)
+            wsu.write(opening_counter, col_counter+1,
+                      result[key]['opening_pharmacy'] if result[key].get('opening_pharmacy') else 0.0,
+                      format_amount)
             opening_counter += 1
 
 
             if 'additions' in result[key]:
                 for category in result[key]['additions']:
                     additions_counter += 1
-                    wsu.write(additions_counter, col_counter+2, category, merge_format_additions)
+                    wsu.write(additions_counter, col_counter+2, category, category_name)
                     additions_counter += 1
                     for invoice in result[key]['additions'][category]:
-                        wsu.write(additions_counter, col_counter+2, invoice)
-                        wsu.write(additions_counter, col_counter+3, result[key]['additions'][category][invoice]['amount'], merge_format_additions)
+                        wsu.write(additions_counter, col_counter+2, invoice, left)
+                        wsu.write(additions_counter, col_counter+3, result[key]['additions'][category][invoice]['amount'], format_amount)
                         total_additions += result[key]['additions'][category][invoice]['amount']
                         additions_counter += 1
 
@@ -655,30 +686,45 @@ class stock_move_report(osv.osv):
             if 'usage' in result[key]:
                 usage_counter += 1
                 for usage_key in result[key]['usage']:
-                    wsu.write(usage_counter, col_counter+4, usage_key)
-                    wsu.write(usage_counter, col_counter+5, result[key]['usage'][usage_key]['amount'], merge_format_usage)
+                    wsu.write(usage_counter, col_counter+4, usage_key, left)
+                    wsu.write(usage_counter, col_counter+5, result[key]['usage'][usage_key]['amount'], format_amount)
                     total_usage += result[key]['usage'][usage_key]['amount']
                     usage_counter += 1
 
             # Closing Balances
-            wsu.write(closing_counter, col_counter+6, "Stock", merge_format_closing)
-            wsu.write(closing_counter, col_counter+7, (result[key]['closing_stock']), bold)
+            wsu.write(closing_counter, col_counter+6, "Stock", left)
+            wsu.write(closing_counter, col_counter+7,
+                      result[key]['closing_stock'] if result[key].get('closing_stock') else 0.0,
+                      format_amount)
             closing_counter += 1
-            wsu.write(closing_counter, col_counter+6, "Pharmacy", merge_format_closing)
-            wsu.write(closing_counter, col_counter+7, result[key]['closing_pharmacy'], bold)
+            wsu.write(closing_counter, col_counter+6, "Pharmacy", left)
+            wsu.write(closing_counter, col_counter+7,
+                      result[key]['closing_pharmacy'] if result[key].get('closing_pharmacy') else 0.0,
+                      format_amount)
             closing_counter += 1
 
             max_counter = max(opening_counter,additions_counter,usage_counter,closing_counter)
             row_counter = max_counter + 1
 
-            wsu.write(row_counter, col_counter, "Total OB", merge_format_opening)
-            wsu.write(row_counter, col_counter+1, result[key]['opening_stock']+result[key]['opening_pharmacy'], merge_format_opening)
-            wsu.write(row_counter, col_counter+2, "Total Addition", merge_format_additions_total)
+            wsu.write(row_counter, col_counter, "Total OB", left_bold)
+            total_opening_stock_pharmacy = 0.0
+            if result[key].get('opening_stock'):
+                total_opening_stock_pharmacy += result[key]['opening_stock']
+            if result[key].get('opening_pharmacy'):
+                total_opening_stock_pharmacy += result[key]['opening_pharmacy']
+            wsu.write(row_counter, col_counter+1, total_opening_stock_pharmacy, merge_format_opening)
+#             wsu.write(row_counter, col_counter+1, result[key]['opening_stock']+result[key]['opening_pharmacy'], merge_format_opening)
+            wsu.write(row_counter, col_counter+2, "Total Addition", left_bold)
             wsu.write(row_counter, col_counter+3, total_additions, merge_format_additions_total)
-            wsu.write(row_counter, col_counter+4, "Total Usage", merge_format_usage_total)
+            wsu.write(row_counter, col_counter+4, "Total Usage", left_bold)
             wsu.write(row_counter, col_counter+5, total_usage, merge_format_usage_total)
-            wsu.write(row_counter, col_counter+6, "Total CB", merge_format_closing)
-            wsu.write(row_counter, col_counter+7, result[key]['closing_stock']+result[key]['closing_pharmacy'], merge_format_closing)
+            wsu.write(row_counter, col_counter+6, "Total CB", left_bold)
+            total_closing_stock_pharmacy = 0.0
+            if result[key].get('closing_stock'):
+                total_closing_stock_pharmacy += result[key]['closing_stock']
+            if result[key].get('closing_pharmacy'):
+                total_closing_stock_pharmacy += result[key]['closing_pharmacy']
+            wsu.write(row_counter, col_counter+7, total_closing_stock_pharmacy, merge_format_closing)
 
             row_counter = row_counter + 2
 

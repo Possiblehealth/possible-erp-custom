@@ -13,7 +13,7 @@
         </record>
     </data>
 
-    <data noupdate="1">
+    <!-- <data noupdate="1">
         <record model="ir.cron" id="run_procurement_scheduler">
             <field name="name">Run Purchase Scheduler</field>
             <field name="interval_number">1</field>
@@ -24,5 +24,5 @@
             <field eval="'run_scheduler'" name="function"/>
             <field eval="'(False,)'" name="args"/>
         </record>
-    </data>
+    </data> -->
 </openerp>
