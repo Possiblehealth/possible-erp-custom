@@ -44,7 +44,7 @@ class stock_warehouse_orderpoint(orm.Model):
         JOIN stock_picking sp ON sp.id = sm.picking_id
         JOIN product_product pp ON pp.id = sm.product_id
         JOIN product_template pt ON pt.id = pp.product_tmpl_id
-        WHERE sl.name like '\%Storeroom'
+        WHERE sl.name like '% Storeroom'
         AND sp.type in ('internal','out')
         AND sm.product_id IN %s AND sm.date > (date(now()) - pp.days_stats)
         GROUP BY sm.product_id,
