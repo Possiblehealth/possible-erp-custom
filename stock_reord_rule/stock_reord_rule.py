@@ -65,7 +65,7 @@ class stock_warehouse_orderpoint(orm.Model):
                     reord_rules_ids = self.search(cr, uid,
                                                   domain,
                                                   context=context)
-                    min_val = 
+                    
                     if reord_rules_ids:
                         self.write(cr, uid,
                                    reord_rules_ids,
