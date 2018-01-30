@@ -33,7 +33,7 @@ class stock_warehouse_orderpoint(orm.Model):
         """
 
         obj_product = self.pool.get('product.product')
-        product_ids = tuple(obj_product.search(cr, uid, [], context=context))
+        product_ids = tuple(obj_product.search(cr, uid, [('days_stats','>',0)], context=context))
         sql = """
          SELECT sm.product_id AS product_id,
                round(sum(product_qty) / pp.days_stats *
