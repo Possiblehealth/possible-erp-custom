@@ -38,13 +38,16 @@ class stock_warehouse_orderpoint(orm.Model):
          SELECT sm.product_id AS product_id,
                round(sum(product_qty) / pp.days_stats *
                    (1 + 1 / 100) * pp.days_warehouse)
-               AS quantity
+               AS quantity,
+               round((sum(product_qty) / pp.days_stats) *
+                   30)
+               AS min_quantity
         FROM stock_move sm
         JOIN stock_location sl ON sl.id = sm.location_id
         JOIN stock_picking sp ON sp.id = sm.picking_id
         JOIN product_product pp ON pp.id = sm.product_id
         JOIN product_template pt ON pt.id = pp.product_tmpl_id
-        WHERE sl.name like '% Storeroom'
+        WHERE sl.name IN ('CKT Storeroom','BPH Storeroom')
         AND sp.type in ('internal','out')
         AND sm.product_id IN %s AND sm.date > (date(now()) - pp.days_stats)
         GROUP BY sm.product_id,
@@ -62,10 +65,11 @@ class stock_warehouse_orderpoint(orm.Model):
                     reord_rules_ids = self.search(cr, uid,
                                                   domain,
                                                   context=context)
+                    min_val = 
                     if reord_rules_ids:
                         self.write(cr, uid,
                                    reord_rules_ids,
-                                   {'product_min_qty': val[1],'product_max_qty': val[1]},
+                                   {'product_min_qty': val[2],'product_max_qty': val[1]},
                                    context=context)
             # template = self.pool.get('ir.model.data').get_object(cr, uid, 'stock_reord_rule', 'email_template_customer_auto')
             # mail_id = self.pool.get('email.template').send_mail(cr, uid, template.id, res , force_send=True)
