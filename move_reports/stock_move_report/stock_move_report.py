@@ -134,7 +134,9 @@ class stock_move_report(osv.osv):
                         amount_total,
                         loc_name,
                         loc_dest_name,
-                        return_reason
+                        return_reason,
+                        lot_id,
+                        product_sale_price
                     )
                 SELECT %d, %d, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC',
                         m.id as move_id, m.date, m.date_expected, m.origin,
@@ -153,7 +155,9 @@ class stock_move_report(osv.osv):
                         m.po_price as po_price, m.amount_total as amount_total,
                         sl.complete_name as location_name,
                         sld.complete_name as location_dest_name,
-                        srr.code as return_reason
+                        srr.code as return_reason,
+                        m.prodlot_id as lot_id,
+                        pt.list_price as product_sale_price
                     from stock_move m
                         left join stock_picking p on p.id = m.picking_id
                         left join product_product pp on pp.id = m.product_id
@@ -212,7 +216,9 @@ class stock_move_report(osv.osv):
                         amount_total,
                         loc_name,
                         loc_dest_name,
-                        return_reason
+                        return_reason,
+                        lot_id,
+                        product_sale_price
                     )
                 SELECT %d, %d, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC',
                         m.id as move_id, m.date, m.date_expected, m.origin,
@@ -230,7 +236,9 @@ class stock_move_report(osv.osv):
                         m.po_price as po_price, m.amount_total as amount_total,
                         sl.complete_name as location_name,
                         sld.complete_name as location_dest_name,
-                        srr.code as return_reason
+                        srr.code as return_reason,
+                        m.prodlot_id as lot_id,
+                        pt.list_price as product_sale_price
                     from stock_move m
                         left join stock_picking p on p.id = m.picking_id
                         left join product_product pp on pp.id = m.product_id
@@ -411,6 +419,8 @@ class stock_move_report(osv.osv):
         'price_unit':       fields.float("Price Unit", digits_compute=dp.get_precision('Account')),
         'amount_total':     fields.float("Purchase total", digits_compute=dp.get_precision('Account')),
         'cost_total':       fields.float("Cost Total", digits_compute=dp.get_precision('Account')),
+        'lot_id':           fields.many2one('stock.production.lot', string="Serial Number", ),
+        'product_sale_price': fields.float("Product Sale Price", digits_compute=dp.get_precision('Account'))
     }
     _defaults = {
     }    

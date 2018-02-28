@@ -49,9 +49,11 @@
                     <field name="product_id"/>
                     <field name="product_qty" sum='Prod Qty'/>
                     <field name="move_qty" sum='Move Qty'/>
+					<field name="lot_id"/>                    
                     <field name="loc_name"/>
                     <field name="loc_dest_name"/>
                     <field name="uom_id" sum='Quantity'/>
+					<field name="product_sale_price"/>                    
                     <field name="product_price"/>
                     <field name="price_unit" string="Cost"/>
                     <field name="cost_total" string="Total" sum='Cost Total'/>
