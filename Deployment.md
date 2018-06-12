@@ -7,8 +7,8 @@
 
 2. Go to path on server: cd /opt/bahmni-erp/etc
 
-3. Open the file openerp-server.conf using vi or nano editor and add following line to it at the end of the file:
-addons_path= /usr/lib/python2.6/site-packages/openerp-7.0_20130301_002301-py2.6.egg/openerp/addons,/opt/bahmni-erp/possible-erp-custom
+3. Open the file openerp-server.conf using vi or nano editor and add following line to it at the beginning of the line:
+addons_path=/opt/bahmni-erp/possible-erp-custom,/usr/lib/python2.6/site-packages/openerp-7.0_20130301_002301-py2.6.egg/openerp/addons
 
 4. Restart the openerp server: sudo service openerp restart
 
