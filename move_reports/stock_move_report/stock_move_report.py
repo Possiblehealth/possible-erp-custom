@@ -176,6 +176,7 @@ class stock_move_report(osv.osv):
                     where  %s 
                     order by m.id
                     """#uid,uid,domain
+                    
     _reverse_sql = """
                 INSERT INTO stock_move_report
                     (
@@ -536,10 +537,10 @@ class stock_move_report(osv.osv):
                 ctx['to_date'] = context['end_date']
                 ctx['location'] = 'Storeroom'
                 category_closing_balance_store = pp_obj.get_product_available_category_wise(cr, uid, product_ids, category_id, context=ctx)
-                result[key]['closing_stock'] = category_opening_balance_pharmacy[category_id]
+                result[key]['closing_stock'] = category_closing_balance_store[category_id]
                 ctx['location'] = 'Pharmacy'
                 category_closing_balance_pharmacy = pp_obj.get_product_available_category_wise(cr, uid, product_ids, category_id, context=ctx)
-                result[key]['closing_pharmacy'] = category_opening_balance_pharmacy[category_id]
+                result[key]['closing_pharmacy'] = category_closing_balance_pharmacy[category_id]
                 
             if(pick_type == 'in'):
                 
