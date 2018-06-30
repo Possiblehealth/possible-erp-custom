@@ -136,7 +136,9 @@ class stock_move_report(osv.osv):
                         loc_dest_name,
                         return_reason,
                         lot_id,
-                        product_sale_price
+                        product_sale_price,
+                        essential,
+                        antibiotic
                     )
                 SELECT %d, %d, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC',
                         m.id as move_id, m.date, m.date_expected, m.origin,
@@ -157,7 +159,9 @@ class stock_move_report(osv.osv):
                         sld.complete_name as location_dest_name,
                         srr.code as return_reason,
                         m.prodlot_id as lot_id,
-                        pt.list_price as product_sale_price
+                        spl.sale_price as product_sale_price,
+                        pt.x_low_cost_eq as essential,
+                        pp.antibiotic as antibiotic
                     from stock_move m
                         left join stock_picking p on p.id = m.picking_id
                         left join product_product pp on pp.id = m.product_id
@@ -173,6 +177,7 @@ class stock_move_report(osv.osv):
                         left join stock_location sld on sld.id = m.location_dest_id
                         left join stock_return_reason srr on srr.id = m.return_reason_id
                         left join account_move am on am.ref=m.origin
+                        left join stock_production_lot spl on spl.id=m.prodlot_id
                     where  %s 
                     order by m.id
                     """#uid,uid,domain
@@ -219,7 +224,9 @@ class stock_move_report(osv.osv):
                         loc_dest_name,
                         return_reason,
                         lot_id,
-                        product_sale_price
+                        product_sale_price,
+                        essential,
+                        antibiotic
                     )
                 SELECT %d, %d, now() AT TIME ZONE 'UTC', now() AT TIME ZONE 'UTC',
                         m.id as move_id, m.date, m.date_expected, m.origin,
@@ -239,7 +246,9 @@ class stock_move_report(osv.osv):
                         sld.complete_name as location_dest_name,
                         srr.code as return_reason,
                         m.prodlot_id as lot_id,
-                        pt.list_price as product_sale_price
+                        spl.sale_price as product_sale_price,
+                        pt.x_low_cost_eq as essential,
+                        pp.antibiotic as antibiotic
                     from stock_move m
                         left join stock_picking p on p.id = m.picking_id
                         left join product_product pp on pp.id = m.product_id
@@ -255,6 +264,7 @@ class stock_move_report(osv.osv):
                         left join stock_location sld on sld.id = m.location_dest_id
                         left join stock_return_reason srr on srr.id = m.return_reason_id
                         left join account_move am on am.ref=m.origin
+                        left join stock_production_lot spl on spl.id=m.prodlot_id
                     WHERE  %s 
                     ORDER BY m.id;
                     """#uid,uid,domain
@@ -421,7 +431,9 @@ class stock_move_report(osv.osv):
         'amount_total':     fields.float("Purchase total", digits_compute=dp.get_precision('Account')),
         'cost_total':       fields.float("Cost Total", digits_compute=dp.get_precision('Account')),
         'lot_id':           fields.many2one('stock.production.lot', string="Serial Number", ),
-        'product_sale_price': fields.float("Product Sale Price", digits_compute=dp.get_precision('Account'))
+        'product_sale_price': fields.float("Product Sale Price", digits_compute=dp.get_precision('Account')),
+        'essential':        fields.boolean('Essential'),
+        'antibiotic':       fields.boolean('Anitbiotic')
     }
     _defaults = {
     }    

@@ -12,7 +12,7 @@ class kpi_sheet_report(osv.osv):
     _description = 'KPI Sheet report for specific location'
     _auto = False
     _date_format = "%Y-%m-%d"
-    _date_time_format = '%Y-%m-%d %H:%M:%S.%f'
+    _date_time_format = '%Y-%m-%d %H:%M:%S'
     _columns={
         'name':fields.text('Name',readonly=True),
         'date_order':fields.date('Order Date',readonly=True),
@@ -23,8 +23,8 @@ class kpi_sheet_report(osv.osv):
 
         drop_view_if_exists(cr,view_name)
         cr.execute("""
-        create or replace view {view_name} AS(select row_number() OVER (order by sm.write_date) as id,pp.name_template as name,
-       pp.id as product_id,sm.product_qty as quantity,sm.write_date as date_order,
+        create or replace view {view_name} AS(select row_number() OVER (order by sm.date) as id,pp.name_template as name,
+       pp.id as product_id,sm.product_qty as quantity,sm.date as date_order,
   sm.location_dest_id, sm.location_id,sm.prodlot_id,
   CASE WHEN sm.location_dest_id ={location_id} THEN '+'
   WHEN sm.location_id = {location_id}  THEN '-'
@@ -154,7 +154,7 @@ ORDER BY pp.id , date_order)
         last_prod_id=-1
         runningTotal=0.0
         stockout_duration=0.0
-        last_date=start_date+" 00:00:00.000000"
+        last_date=start_date+" 00:00:00"
         sum_stock_out=0
         for row in rows:
             line = []
@@ -207,7 +207,7 @@ ORDER BY pp.id , date_order)
                     sum_stock_out=0
                 last_prod_id = prodID
                 stockout_duration=0.0
-                last_date=start_date+" 00:00:00.000000"
+                last_date=start_date+" 00:00:00"
             if not row[2]:
                 runningTotal = runningTotal + 0
             else:

@@ -82,6 +82,8 @@
                     <field name="loc_dest_name"/>
                     <filter string='Incoming' icon="terp-mrp" domain="[('pick_return','=','none')]"/>
                     <filter string='Return' icon="terp-mrp" domain="[('pick_return','=','supplier')]"/>
+                    <filter string='Essential' icon="terp-mrp" domain="[('essential','=','true')]"/>
+                    <filter string='Antibiotic' icon="terp-mrp" domain="[('antibiotic','=','false')]"/>
                    	<group  expand='0' string='Group by...'>
                    		<filter string='Origin' icon="terp-partner" domain="[]" context="{'group_by' : 'origin'}"/>
                    		<filter string='Date' icon="terp-partner" domain="[]" context="{'group_by' : 'date'}"/>
@@ -93,7 +95,6 @@
                        	<filter string='Picking Type' icon="terp-mrp" domain="[]" context="{'group_by' : 'type'}"/>
                        	<filter string='Source Location' icon="terp-mrp" domain="[]" context="{'group_by' : 'loc_name'}"/>
                        	<filter string='Dest Location' icon="terp-mrp" domain="[]" context="{'group_by' : 'loc_dest_name'}"/>
-                       
                    	</group>
                 </search>
             </field>
