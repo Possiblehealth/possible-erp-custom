@@ -8,11 +8,7 @@
     'category': 'Stock',
     'sequence': 19,
     'summary': 'Stock with Cost',
-    'description': """
-        Stock With Cost
-        ==================================================
-        * Add Cost (POL Price) in Stock Move, Stock picking
-    """,
+    'description': 'Stock with cost',
     'author': 'Elico Corp',
     'website': 'https://www.elico-corp.com',
     'depends': ['stock_extra'],

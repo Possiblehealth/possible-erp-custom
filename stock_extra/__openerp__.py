@@ -9,16 +9,7 @@
     'category': 'Stock',
     'sequence': 19,
     'summary': 'Stock Extra',
-    'description': """
-        Stock Extra Module
-        ==================================================
-        * Improve Stock Move Process
-        * Improve Stock Pick Return / Scrap
-        * Create Special Menus and Views for Return Pickings and Moves
-        * Improve return, add stock return type
-        * Create a kanban view for stock piking with delivery
-        * Add Quick Internal Picking Entry
-    """,
+    'description': 'Stock Extra',
     'author': 'Elico Corp',
     'website': 'https://www.elico-corp.com',
     'images' : [],
