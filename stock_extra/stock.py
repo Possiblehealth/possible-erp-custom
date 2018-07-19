@@ -124,11 +124,36 @@ class stock_partial_picking(osv.osv_memory):
     _inherit = "stock.partial.picking"
     _name = "stock.partial.picking"
 
+    # def do_partial(self, cr, uid, ids, context=None):
+    #     partial = self.browse(cr, uid, ids[0], context=context)
+    #     picking_obj = self.pool.get('stock.picking.in')
+    #     picking = picking_obj.browse(cr, uid, context['active_id'], context=context)
+
+    #     print "Move_ids"
+    #     print partial.move_ids
+
+    #     return super(stock_partial_picking, self).do_partial(cr, uid, ids, context=context)
+
+
     def default_get(self, cr, uid, fields, context=None):
         if context is None: context = {}
         res = super(stock_partial_picking, self).default_get(cr, uid, fields, context=context)
         picking_ids = context.get('active_ids', [])
         active_model = context.get('active_model')
+
+        picking_obj = self.pool.get('stock.picking')
+        picking_res = picking_obj.browse(cr, uid, picking_ids[0], context=context)
+
+        move_obj = self.pool.get('stock.move').search(cr, uid,[('origin', '=', picking_res.origin)])
+        move_entry = self.pool.get('stock.move').browse(cr, uid, move_obj[0], context=context)
+
+        # fields.append('move_ids')
+        # cr.execute("UPDATE stock_picking SET location_id = %s, location_dest_id = %s WHERE id = %s" % 
+        #     (move_entry.location_id.id, move_entry.location_dest_id.id, picking_ids[0]))
+        # print cr.fetchone()[0]
+        picking_obj.write(cr, uid, picking_res.id, {'location_id': move_entry.location_id.id,
+          'location_dest_id': move_entry.location_dest_id.id})
+        picking_res = picking_obj.browse(cr, uid, picking_ids[0], context=context)
 
         if not picking_ids or len(picking_ids) != 1:
             # Partial Picking Processing may only be done for one picking at a time
@@ -150,6 +175,41 @@ class stock_partial_picking(osv.osv_memory):
     
 stock_partial_picking()
 
+# class stock_partial_picking_line(osv.TransientModel):
+#     _inherit = "stock.partial.picking.line"
+#     _name = "stock.partial.picking.line"
+
+#     def create(self, cr, uid, vals, context=None):
+#         ###Add your code here
+#         ####update status in vals
+        
+#         stock_partial_picking = self.pool.get('stock.partial.picking')
+#         partial_picking_res = stock_partial_picking.browse(cr, uid, vals['wizard_id'], context=context)
+#         print partial_picking_res.picking_id
+
+#         picking_obj = self.pool.get('stock.picking')
+#         move_obj = self.pool.get('stock.move')
+#         picking_res = picking_obj.browse(cr, uid, partial_picking_res.picking_id.id, context=context)
+
+#         if ('location_dest_id' not in vals):
+#             vals['location_dest_id'] = picking_res.location_dest_id.id
+
+#         if ('location_id' not in vals):
+#             vals['location_id'] = picking_res.location_id.id
+
+#         if ('move_id' not in vals):
+#             # move_search = move_obj.search(cr, uid,[('picking_id', '=', partial_picking_res.picking_id.id),
+#             #     ('')])
+#             # move_entry = self.pool.get('stock.move').browse(cr, uid, move_search[0], context=context)
+#             vals['move_id'] = partial_picking_res.picking_id.move_id.id
+
+#         print vals
+
+#         res = super(stock_partial_picking_line,self).create(cr, uid, vals, context=context)
+#         print res
+#         return res
+
+# stock_partial_picking_line()
 
 class stock_return_picking(osv.osv):
     _inherit = 'stock.return.picking'

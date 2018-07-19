@@ -17,6 +17,10 @@ class stock_move(osv.osv):
         @param partner_id: Address id of partner
         @return: Dictionary of values
         """
+        # print "Location---------------"
+        # print loc_id
+        # print loc_dest_id
+
         if not prod_id:
             return {}
         lang = False
@@ -51,7 +55,7 @@ class stock_move(osv.osv):
 #     product_id, product_qty, product_uom, product_uos, location_id, parent.move_lines, context
     #over ridden this method to raise warning for product when quantity on hand is less than required
     def onchange_quantity(self, cr, uid, ids, product_id, product_qty,
-                          product_uom, product_uos, loc_id=False, move_lines=False, context=None):
+                          product_uom, product_uos, loc_id=False, move_lines=False, context=None, loc_dest_id=False):
         """ On change of product quantity finds UoM and UoS quantities
         @param product_id: Product id
         @param product_qty: Changed Quantity of product
@@ -62,6 +66,11 @@ class stock_move(osv.osv):
         result = {
             'product_uos_qty': 0.00
         }
+
+        # print "Location OnChange---------------"
+        # print loc_id
+        # print loc_dest_id
+
         warning = {}
         warn_msgs = ''
         if (not product_id) or (product_qty < 0.0):
