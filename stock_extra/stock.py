@@ -141,19 +141,19 @@ class stock_partial_picking(osv.osv_memory):
         picking_ids = context.get('active_ids', [])
         active_model = context.get('active_model')
 
-        picking_obj = self.pool.get('stock.picking')
-        picking_res = picking_obj.browse(cr, uid, picking_ids[0], context=context)
+        # picking_obj = self.pool.get('stock.picking')
+        # picking_res = picking_obj.browse(cr, uid, picking_ids[0], context=context)
 
-        move_obj = self.pool.get('stock.move').search(cr, uid,[('origin', '=', picking_res.origin)])
-        move_entry = self.pool.get('stock.move').browse(cr, uid, move_obj[0], context=context)
+        # move_obj = self.pool.get('stock.move').search(cr, uid,[('origin', '=', picking_res.origin)])
+        # move_entry = self.pool.get('stock.move').browse(cr, uid, move_obj[0], context=context)
 
         # fields.append('move_ids')
         # cr.execute("UPDATE stock_picking SET location_id = %s, location_dest_id = %s WHERE id = %s" % 
         #     (move_entry.location_id.id, move_entry.location_dest_id.id, picking_ids[0]))
         # print cr.fetchone()[0]
-        picking_obj.write(cr, uid, picking_res.id, {'location_id': move_entry.location_id.id,
-          'location_dest_id': move_entry.location_dest_id.id})
-        picking_res = picking_obj.browse(cr, uid, picking_ids[0], context=context)
+        # picking_obj.write(cr, uid, picking_res.id, {'location_id': move_entry.location_id.id,
+        #   'location_dest_id': move_entry.location_dest_id.id})
+        # picking_res = picking_obj.browse(cr, uid, picking_ids[0], context=context)
 
         if not picking_ids or len(picking_ids) != 1:
             # Partial Picking Processing may only be done for one picking at a time

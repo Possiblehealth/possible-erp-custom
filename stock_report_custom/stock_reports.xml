@@ -8,4 +8,12 @@
            string="Receipt Slip"
 		   rml="stock_report_custom/report/report_receipt_slip.rml"/>
 	</data>
+	<data>
+<!--report_receipt_slip	-->
+		<report id="bahmni_internal_stock_move.report_picking_slip_in"
+           model="stock.picking"
+           name="stock.picking.picking_slip1"
+           string="Picking Slip"
+		   rml="stock_report_custom/report/report_picking_slip.rml"/>
+	</data>
 </openerp>
