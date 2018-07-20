@@ -35,7 +35,7 @@ class stock_warehouse_orderpoint(orm.Model):
         obj_product = self.pool.get('product.product')
         product_ids = tuple(obj_product.search(cr, uid, [('days_stats','>',0)], context=context))
         sql = """
-         SELECT sm.product_id AS product_id,
+         SELECT sm.product_id AS product_id,sm.location_id as location_id,
                round(sum(product_qty) / pp.days_stats *
                    (1 + 1 / 100) * pp.days_warehouse)
                AS quantity,
@@ -47,10 +47,10 @@ class stock_warehouse_orderpoint(orm.Model):
         JOIN stock_picking sp ON sp.id = sm.picking_id
         JOIN product_product pp ON pp.id = sm.product_id
         JOIN product_template pt ON pt.id = pp.product_tmpl_id
-        WHERE sl.name IN ('CKT Storeroom','BPH Storeroom')
-        AND sp.type in ('internal','out')
+        WHERE  sp.type in ('in','internal','out')
         AND sm.product_id IN %s AND sm.date > (date(now()) - pp.days_stats)
         GROUP BY sm.product_id,
+              sm.location_id,
                  pp.days_stats,
                  pp.forecast_gap,
                  pp.days_warehouse;
@@ -61,7 +61,7 @@ class stock_warehouse_orderpoint(orm.Model):
         if sql_res:
             for val in sql_res:
                 if val:
-                    domain = [('product_id', '=', val[0])]
+                    domain = [('product_id', '=', val[0]),('location_id', '=', val[1])]
                     reord_rules_ids = self.search(cr, uid,
                                                   domain,
                                                   context=context)
@@ -69,7 +69,7 @@ class stock_warehouse_orderpoint(orm.Model):
                     if reord_rules_ids:
                         self.write(cr, uid,
                                    reord_rules_ids,
-                                   {'product_min_qty': val[2],'product_max_qty': val[1]},
+                                   {'product_min_qty': val[3],'product_max_qty': val[2]},
                                    context=context)
             # template = self.pool.get('ir.model.data').get_object(cr, uid, 'stock_reord_rule', 'email_template_customer_auto')
             # mail_id = self.pool.get('email.template').send_mail(cr, uid, template.id, res , force_send=True)

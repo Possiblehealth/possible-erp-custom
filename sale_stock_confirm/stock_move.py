@@ -101,7 +101,7 @@ class stock_move(osv.osv):
         if ids:
             for move in self.read(cr, uid, ids, ['product_qty']):
                 if product_qty < move['product_qty']:
-                    warn_msg += _("By changing this quantity here, you accept the "
+                    warn_msgs += _("By changing this quantity here, you accept the "
                                     "new quantity as complete: OpenERP will not "
                                     "automatically generate a back order.")
                     warn_msgs += _("Information :\n ") + warn_msg + "\n\n"
