@@ -2,9 +2,12 @@
 import math
 from datetime import datetime
 import re
+from itertools import groupby
 from openerp.osv import osv, fields
 from openerp import tools
 
+import logging
+_logger = logging.getLogger(__name__)
 
 class OrderSaveService(osv.osv):
     _inherit = 'order.save.service'
@@ -70,6 +73,7 @@ class OrderSaveService(osv.osv):
                     # but greater than or equal to required volume
                     if existing_products_with_same_name[0] != prod_obj.id:
                         prod_obj = self.pool.get('product.product').browse(cr, uid, existing_products_with_same_name[0])
+                        prod_lot = sale_order_line_obj.get_available_batch_details(cr, uid, prod_obj.id, sale_order, context=context)
                         comments = " ".join([str(actual_quantity)+'m(l/g)', str(order.get('quantityUnits', None))])
                         
                     # if there exists only single product with provided conceptname, then no matter only that product will get dispensed
@@ -89,11 +93,13 @@ class OrderSaveService(osv.osv):
                                                                                         ('volume', '<', visited_product.volume),
                                                                                         ('volume', '>=', order['quantity'])],
                                                                                         order='volume desc')
+                            _logger.info("\n\n\n**** searched prd_ids=%s",prd_ids)
                             if not prd_ids:
                                 product_found = True
                             else:
                                 visited_products.append(prd_ids[0])
                         prod_obj = self.pool.get('product.product').browse(cr, uid, visited_products[-1])
+                        prod_lot = sale_order_line_obj.get_available_batch_details(cr, uid, prod_obj.id, sale_order, context=context)
                         # if there exists multiple products with same name, then whatever volume is satisfied by product will get assigned to line
                         if product_uom_qty / prod_obj.volume > 0 and product_uom_qty / prod_obj.volume < 1:
                             product_uom_qty = 1
@@ -106,7 +112,9 @@ class OrderSaveService(osv.osv):
             # which is checking future_forecast qty is less than ordered quantity
             # if(prod_lot != None and order['quantity'] > prod_lot.future_stock_forecast):
             if(prod_lot is not None and order['quantity'] <= prod_lot.future_stock_forecast):
-                product_uom_qty = prod_lot.future_stock_forecast
+                product_uom_qty = math.floor(actual_quantity / prod_obj.volume)#prod_lot.future_stock_forecast
+            if prod_lot is None:#Anand Patel
+                prod_lot = sale_order_line_obj.get_available_batch_details(cr, uid, prod_obj.id, sale_order, context=context)
 
             sale_order_line = {
                 'product_id': prod_obj.id,
@@ -131,7 +139,34 @@ class OrderSaveService(osv.osv):
                 sale_order_line['batch_id'] = prod_lot.id
                 sale_order_line['expiry_date'] = life_date and life_date.strftime('%d/%m/%Y')
 
-            sale_order_line_obj.create(cr, uid, sale_order_line, context=context)
+            line_domain = [#Anand Patel
+            ('product_id','=', prod_obj.id),
+            ('price_unit','=',prod_obj.list_price),
+            #('comments','=',comments),
+            #('product_uom_qty','=',product_uom_qty),
+            ('product_uom','=',prod_obj.uom_id.id),
+            ('order_id','=',sale_order.id),
+            ('external_id','=',order['encounterId']),
+            ('external_order_id','=',order['orderId']),
+            ('name','=',prod_obj.name),
+            ('type','=','make_to_stock'),
+            ('state','=','draft'),
+            ('dispensed_status','=',order.get('dispensed', False))
+            ]
+            existing_line_ids = sale_order_line_obj.search(cr, uid, line_domain, context=context)#Anand Patel
+            _logger.info("\n\n*** existing_line_ids=%s",existing_line_ids)
+            if existing_line_ids:#Anand Patel
+                existing_line = sale_order_line_obj.browse(cr, uid, existing_line_ids[0], context=context)#Anand Patel
+                comment_volume,comment_uom = existing_line.comments.split(" ")
+                updated_line_qty = existing_line.product_uom_qty + 1
+                comment_volume = float(existing_line.product_id.volume) * updated_line_qty
+                comments = " ".join([str(comment_volume), str(comment_uom)])
+                sale_order_line_obj.write(cr, uid, existing_line.id, {
+                                        'product_uom_qty':updated_line_qty,
+                                        'comments':comments
+                                        }, context=context)#Anand Patel
+            else:#Anand Patel
+                sale_order_line_obj.create(cr, uid, sale_order_line, context=context)#Anand Patel
 
             sale_order = self.pool.get('sale.order').browse(cr, uid, sale_order.id, context=context)
             if common and prod_obj.volume:
@@ -142,3 +177,108 @@ class OrderSaveService(osv.osv):
                 if product_uom_qty < order['quantity']:
                     order['quantity'] = order['quantity'] - product_uom_qty
                     self._create_sale_order_line_function(cr, uid, name, sale_order, order, context=context)
+'''                    
+    #Override this method to delilver the delivery order for "Dispense" Feature.
+    #Actually when user press "D" button from Bahmni then its Confirming the quotatio to Sale Order 
+    #Delivery Order is created when confirm the Quotation But client needs that delivery created also needs to be delivered.
+    #So that stock will be deducted.                
+    def create_orders(self, cr,uid,vals,context):
+        customer_id = vals.get("customer_id")
+        location_name = vals.get("locationName")
+        all_orders = self._get_openerp_orders(vals)
+
+        if(not all_orders):
+            return ""
+
+        customer_ids = self.pool.get('res.partner').search(cr, uid, [('ref', '=', customer_id)], context=context)
+        if(customer_ids):
+            cus_id = customer_ids[0]
+
+            for orderType, ordersGroup in groupby(all_orders, lambda order: order.get('type')):
+
+                orders = list(ordersGroup)
+                care_setting = orders[0].get('visitType').lower()
+                provider_name = orders[0].get('providerName')
+                unprocessed_orders = self._filter_processed_orders(context, cr, orders, uid)
+
+                tup = self._get_shop_and_local_shop_id(cr, uid, orderType, location_name, context)
+                shop_id = tup[0]
+                local_shop_id = tup[1]
+
+                if(not shop_id):
+                    continue
+
+                name = self.pool.get('ir.sequence').get(cr, uid, 'sale.order')
+                #Adding both the ids to the unprocessed array of orders, Separating to dispensed and non-dispensed orders
+                unprocessed_dispensed_order = []
+                unprocessed_non_dispensed_order = []
+                for unprocessed_order in unprocessed_orders :
+                    unprocessed_order['custom_shop_id'] = shop_id
+                    unprocessed_order['custom_local_shop_id'] = local_shop_id
+                    if(unprocessed_order.get('dispensed', 'false') == 'true') :
+                        unprocessed_dispensed_order.append(unprocessed_order)
+                    else :
+                        unprocessed_non_dispensed_order.append(unprocessed_order)
+
+                if(len(unprocessed_non_dispensed_order) > 0 ) :
+                    sale_order_ids = self.pool.get('sale.order').search(cr, uid, [('partner_id', '=', cus_id), ('shop_id', '=', unprocessed_non_dispensed_order[0]['custom_shop_id']), ('state', '=', 'draft'), ('origin', '=', 'ATOMFEED SYNC')], context=context)
+
+                    if(not sale_order_ids):
+                        #Non Dispensed New
+                        self._create_sale_order(cr, uid, cus_id, name, unprocessed_non_dispensed_order[0]['custom_shop_id'], unprocessed_non_dispensed_order, care_setting, provider_name, context)
+                    else:
+                        #Non Dispensed Update
+                        self._update_sale_order(cr, uid, cus_id, name, unprocessed_non_dispensed_order[0]['custom_shop_id'], care_setting, sale_order_ids[0], unprocessed_non_dispensed_order, provider_name, context)
+
+                    sale_order_ids_for_dispensed = self.pool.get('sale.order').search(cr, uid, [('partner_id', '=', cus_id), ('shop_id', '=', unprocessed_non_dispensed_order[0]['custom_local_shop_id']), ('state', '=', 'draft'), ('origin', '=', 'ATOMFEED SYNC')], context=context)
+
+                    if(len(sale_order_ids_for_dispensed) > 0):
+                        if(sale_order_ids_for_dispensed[0]) :
+                            sale_order_line_ids_for_dispensed = self.pool.get('sale.order.line').search(cr, uid, [('order_id', '=', sale_order_ids_for_dispensed[0])], context=context)
+                            if(len(sale_order_line_ids_for_dispensed) == 0):
+                                self.pool.get('sale.order').unlink(cr, uid, sale_order_ids_for_dispensed, context=context)
+
+                if(len(unprocessed_dispensed_order) > 0 and local_shop_id) :
+                    sale_order_ids = self.pool.get('sale.order').search(cr, uid, [('partner_id', '=', cus_id), ('shop_id', '=', unprocessed_dispensed_order[0]['custom_shop_id']), ('state', '=', 'draft'), ('origin', '=', 'ATOMFEED SYNC')], context=context)
+
+                    sale_order_ids_for_dispensed = self.pool.get('sale.order').search(cr, uid, [('partner_id', '=', cus_id), ('shop_id', '=', unprocessed_dispensed_order[0]['custom_local_shop_id']), ('state', '=', 'draft'), ('origin', '=', 'ATOMFEED SYNC')], context=context)
+                    if(not sale_order_ids_for_dispensed):
+                        
+                        if any(sale_order_ids):
+                            #Remove existing sale order line
+                            self._remove_existing_sale_order_line(cr,uid,sale_order_ids[0],unprocessed_dispensed_order,context=context)
+
+                            #Removing existing empty sale order
+                            sale_order_line_ids = self.pool.get('sale.order.line').search(cr, uid, [('order_id', '=', sale_order_ids[0])], context=context)
+
+                        if(len(sale_order_line_ids) == 0):
+                            self.pool.get('sale.order').unlink(cr, uid, sale_order_ids, context=context)
+
+                        #Dispensed New
+                        self._create_sale_order(cr, uid, cus_id, name, unprocessed_dispensed_order[0]['custom_local_shop_id'], unprocessed_dispensed_order, care_setting, provider_name, context)
+                        if(self._allow_automatic_convertion_to_saleorder (cr,uid)):
+                            sale_order_ids_for_dispensed = self.pool.get('sale.order').search(cr, uid, [('partner_id', '=', cus_id), ('shop_id', '=', unprocessed_dispensed_order[0]['custom_local_shop_id']), ('state', '=', 'draft'), ('origin', '=', 'ATOMFEED SYNC')], context=context)
+                            self.pool.get('sale.order').action_button_confirm(cr, uid, sale_order_ids_for_dispensed, context)
+                            #Below code is to delivery the delivery order automatically when sale order confirms from "D" button
+                            #From Bahmni [Anand Patel]
+                            for sale_order_id_for_dispensed in sale_order_ids_for_dispensed:
+                                picking_ids = self.pool.get('sale.order').browse(cr, uid, sale_order_id_for_dispensed, context).picking_ids
+                                for picking_id in picking_ids:
+                                    action_process = picking_id.action_process()
+                                    partial_picking_id = self.pool.get('stock.partial.picking').create(cr, uid, {}, action_process.get('context'))
+                                    do_partial = self.pool.get('stock.partial.picking').do_partial(cr, uid, [int(partial_picking_id)], action_process.get('context'))
+
+                    else:
+                        #Remove existing sale order line
+                        self._remove_existing_sale_order_line(cr,uid,sale_order_ids[0],unprocessed_dispensed_order,context=context)
+
+                        #Removing existing empty sale order
+                        sale_order_line_ids = self.pool.get('sale.order.line').search(cr, uid, [('order_id', '=', sale_order_ids[0])], context=context)
+                        if(len(sale_order_line_ids) == 0):
+                            self.pool.get('sale.order').unlink(cr, uid, sale_order_ids, context=context)
+
+                        #Dispensed Update
+                        self._update_sale_order(cr, uid, cus_id, name, unprocessed_dispensed_order[0]['custom_local_shop_id'], care_setting, sale_order_ids_for_dispensed[0], unprocessed_dispensed_order, provider_name, context)
+        else:
+            raise osv.except_osv(('Error!'), ("Patient Id not found in openerp"))
+'''
